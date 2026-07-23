@@ -1,139 +1,104 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#9fd8f5">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>비움과채움 실시간 예약</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>
-:root{--bg:#eef9ff;--card:#ffffff;--ink:#24445a;--muted:#6f8796;--line:#d6edf8;--purple:#72c6ec;--purple2:#a9ddf6;--green:#49b98d;--red:#ee8290;--softgreen:#eafff5;--softred:#fff1f4;--softpurple:#e7f6ff}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}button,input{font:inherit}button{cursor:pointer}
-.app{max-width:820px;margin:auto;min-height:100vh}
-header{position:sticky;top:0;z-index:1200;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(240,250,255,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-.brand{display:flex;gap:10px;align-items:center}.logo{width:46px;height:46px;border-radius:16px;background:linear-gradient(135deg,var(--purple),var(--purple2));display:grid;place-items:center;color:#fff;font-weight:950}
-.brand b{display:block;font-size:19px}.brand small{color:var(--muted)}.header-actions{display:flex;gap:8px}.pill{border:0;border-radius:999px;padding:10px 12px;font-size:13px;font-weight:900;background:var(--softpurple);color:#377fa3}
-#map{height:38vh;min-height:310px}.hero-wrap{position:relative}.hero{position:absolute;left:12px;right:12px;bottom:12px;z-index:500;background:rgba(255,255,255,.97);border-radius:26px;padding:16px;box-shadow:0 15px 40px rgba(73,151,190,.18);display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:center}
-.character{width:104px;height:104px;display:grid;place-items:center}.character svg{width:100%;height:100%}.state-line{font-weight:950;font-size:18px}.big{font-size:clamp(36px,9vw,66px);font-weight:1000;letter-spacing:-2px;line-height:1;margin:7px 0}.sub{color:var(--muted);margin:0;font-size:14px}
-main{padding:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;margin-bottom:14px;box-shadow:0 8px 24px rgba(73,151,190,.07)}h2{font-size:20px;margin:0 0 14px}
-.date-row{display:flex;gap:8px;overflow:auto}.date{min-width:84px;border:1px solid var(--line);background:#fff;border-radius:17px;padding:11px 7px;font-weight:900}.date.active{background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff;border-color:transparent}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.slot{border:1px solid var(--line);background:#fff;border-radius:15px;padding:10px 5px;font-weight:900;min-height:58px}.slot small{display:block;font-size:11px;margin-top:4px;font-weight:800;opacity:.85}
-.slot.free{background:var(--softgreen);color:#13885d;border-color:#b8f3d9}.slot.busy{background:var(--softred);color:#c53243;border-color:#ffd0d6}.slot.selected{background:var(--softpurple);color:#377fa3;border:2px solid #77c7ed}
-.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:12px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.btn{border:0;border-radius:16px;padding:14px;font-weight:950}.primary{background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff}.gray{background:#f2f1f7;color:var(--ink)}.danger{background:var(--softred);color:#bd2c3c}
-.summary{color:var(--muted);font-size:14px;margin:12px 0 0}.customer-only{display:none}.customer .owner-only{display:none}.customer .customer-only{display:block}
-.field{margin-top:12px}label{display:block;font-weight:900;margin-bottom:6px}input{width:100%;padding:14px;border:1px solid var(--line);border-radius:15px;background:#fff}
-.location-box{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:14px}.location-box button{border:0;border-radius:14px;padding:0 16px;background:#e4f5fd;color:#377fa3;font-weight:900}
-.reserve{width:100%;margin-top:14px;border:0;border-radius:18px;padding:17px;background:linear-gradient(135deg,#7cccf0,#a8e0f8);color:#fff;font-size:18px;font-weight:1000}.note{margin-top:11px;border-radius:15px;padding:12px;background:#fff8e8;color:#855d00;font-size:13px}
-.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,30px);opacity:0;z-index:3000;background:#31566b;color:#fff;padding:14px 18px;border-radius:999px;font-weight:900;box-shadow:0 14px 30px rgba(0,0,0,.22);transition:.25s;pointer-events:none;white-space:nowrap}.toast.show{opacity:1;transform:translate(-50%,0)}
-.confetti{position:fixed;inset:0;pointer-events:none;z-index:2500;overflow:hidden}.confetti i{position:absolute;width:9px;height:14px;border-radius:3px;animation:fall 1.15s ease-out forwards}@keyframes fall{0%{transform:translateY(-10vh) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(540deg);opacity:0}}
-@media(max-width:560px){.grid{grid-template-columns:repeat(3,1fr)}.hero{grid-template-columns:86px 1fr}.character{width:82px;height:82px}#map{height:37vh}.header-actions .pill{padding:9px 10px}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#bfe8ff" />
+  <title>비움과채움</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
-<div class="app" id="app">
-<header>
- <div class="brand"><div class="logo">비채</div><div><b>비움과채움</b><small>실시간 예약</small></div></div>
- <div class="header-actions"><button class="pill" id="musicBtn">🎵 음악 켜기</button><button class="pill" id="modeBtn">관리자 화면</button></div>
-</header>
-<section class="hero-wrap">
- <div id="map"></div>
- <div class="hero"><div class="character" id="character"></div><div><div class="state-line" id="stateLine">예약 가능해요 😊</div><div class="big" id="bigText">지금 가능</div><p class="sub" id="subText">원하는 시간을 골라주세요</p></div></div>
-</section>
-<main>
- <section class="card"><h2>날짜 선택</h2><div class="date-row" id="dateRow"></div></section>
+  <main class="app">
+    <header class="hero">
+      <div class="logo">☁️</div>
+      <div>
+        <h1>비움과채움</h1>
+        <p>편안하게 예약하고, 따뜻하게 채워드려요 💙</p>
+      </div>
+    </header>
 
- <section class="card owner-only">
-  <h2>관리자 예약 설정</h2>
-  <div class="grid" id="ownerGrid"></div>
-  <div class="legend"><span>😊 예약 가능</span><span>😢 예약 불가</span><span>🩵 선택 중</span></div>
-  <p class="summary" id="ownerSummary">시간을 선택하세요.</p>
-  <div class="location-box">
-   <input id="dongName" placeholder="예약 지역 동 이름 예: 잠실동">
-   <button id="applyDongBtn">지역 적용</button>
-  </div>
-  <div class="actions">
-   <button class="btn primary" id="blockBtn">선택 시간 예약됨</button>
-   <button class="btn danger" id="unblockBtn">선택 시간 비우기</button>
-   <button class="btn gray" id="locateBtn">현재 위치 1회</button>
-   <button class="btn primary" id="shareLocationBtn">실시간 위치 시작</button>
-   <button class="btn danger" id="stopLocationBtn">위치 공유 중지</button>
-   <button class="btn gray" id="notifyBtn">🔔 예약 알림 허용</button>
-   <button class="btn gray" id="customerViewBtn">고객 화면 보기</button>
-  </div>
-  <div class="note" id="locationStatus">위치 공유 꺼짐 · 공릉동 보호구역에서는 태릉입구역으로 표시됩니다.</div>
- </section>
+    <section class="card status-card">
+      <div>
+        <span class="eyebrow">오늘의 상태</span>
+        <h2 id="shopStatus">😊 예약 가능</h2>
+        <p id="locationText">📍 위치 공유가 꺼져 있습니다.</p>
+      </div>
+      <span id="liveBadge" class="badge off">OFF</span>
+    </section>
 
- <section class="card customer-only">
-  <h2>예약 가능한 시간</h2><div class="grid" id="customerGrid"></div><p class="summary" id="customerSummary">빈 시간을 눌러주세요.</p>
-  <div class="field"><label>이름</label><input id="name" placeholder="예약자 이름"></div>
-  <div class="field"><label>연락처</label><input id="phone" inputmode="tel" placeholder="010-0000-0000"></div>
-  <button class="reserve" id="reserveBtn">예약 요청하기 🩵</button>
-  <div class="note">예약된 시간에는 정확한 주소 대신 동 이름만 표시됩니다. 예약 요청은 문자 대신 앱 알림 방식으로 준비되어 있습니다.</div>
- </section>
-</main>
-</div>
-<div class="toast" id="toast"></div><div class="confetti" id="confetti"></div>
+    <section class="card">
+      <h2>예약하기</h2>
+      <div class="grid">
+        <label>이름<input id="customerName" placeholder="홍길동" /></label>
+        <label>연락처<input id="customerPhone" placeholder="010-0000-0000" inputmode="tel" /></label>
+        <label>동네<input id="customerDong" placeholder="공릉동" /></label>
+        <label>날짜<input id="reserveDate" type="date" /></label>
+        <label>시간
+          <select id="reserveTime"></select>
+        </label>
+        <label class="wide">요청사항<textarea id="memo" placeholder="남기실 말씀이 있으면 적어주세요."></textarea></label>
+      </div>
+      <button id="reserveBtn" class="primary">예약 신청하기 😊</button>
+      <p class="hint">예약은 관리자 확인 후 최종 확정됩니다.</p>
+    </section>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-const KEY='biumchaeum_sky_v4',OPEN=8,CLOSE=20;
-const TAE_LAT=37.6176889,TAE_LNG=127.0756694,PRIVACY_RADIUS=1800;
-const app=document.getElementById('app');
-let state={schedule:{},selectedDate:dateKey(new Date()),lat:37.5965,lng:127.0857};
-try{const x=JSON.parse(localStorage.getItem(KEY));if(x)state={...state,...x}}catch(e){}
-let ownerSel=new Set(),customerSel=new Set(),musicOn=false,audioCtx=null,musicTimer=null,geoWatchId=null,lastAccuracy=0;
-state.locationSharing=!!state.locationSharing; state.publicLat=state.publicLat||state.lat; state.publicLng=state.publicLng||state.lng;
+    <section class="card">
+      <h2>현재 위치 안내</h2>
+      <div id="map"></div>
+      <p class="hint">공릉동 안에서는 실제 위치 대신 태릉입구역으로 표시됩니다.</p>
+    </section>
 
-const happySVG=`<svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="49" fill="#fff2b2"/><circle cx="43" cy="51" r="5" fill="#302f46"/><circle cx="77" cy="51" r="5" fill="#302f46"/><path d="M39 72 Q60 91 81 72" fill="none" stroke="#302f46" stroke-width="6" stroke-linecap="round"/><circle cx="31" cy="64" r="7" fill="#ff9aaa" opacity=".7"/><circle cx="89" cy="64" r="7" fill="#ff9aaa" opacity=".7"/></svg>`;
-const sadSVG=`<svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="49" fill="#dfe7ff"/><circle cx="43" cy="52" r="5" fill="#302f46"/><circle cx="77" cy="52" r="5" fill="#302f46"/><path d="M40 82 Q60 65 80 82" fill="none" stroke="#302f46" stroke-width="6" stroke-linecap="round"/><path d="M84 57 Q92 68 84 76 Q76 68 84 57" fill="#7ec8ff"/></svg>`;
+    <section class="card admin-card">
+      <div class="section-title">
+        <h2>관리자</h2>
+        <button id="adminLoginBtn" class="small">관리자 열기</button>
+      </div>
 
-const map=L.map('map').setView([state.publicLat,state.publicLng],15);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
-let marker=L.circleMarker([state.publicLat,state.publicLng],{radius:11,color:'#fff',weight:4,fillColor:'#67bfe8',fillOpacity:1}).addTo(map);
-let circle=L.circle([state.publicLat,state.publicLng],{radius:450,color:'#67bfe8',fillColor:'#67bfe8',fillOpacity:.08,weight:1}).addTo(map);
+      <div id="adminPanel" class="hidden">
+        <div class="admin-actions">
+          <button id="startWorkBtn" class="success">🟢 출근 · 위치 공유 시작</button>
+          <button id="stopWorkBtn" class="danger">🔴 퇴근 · 위치 공유 종료</button>
+          <button id="toggleBookingBtn" class="secondary">예약 가능/불가 변경</button>
+        </div>
 
+        <h3>예약 목록</h3>
+        <div id="reservationList" class="reservation-list"></div>
+      </div>
+    </section>
+  </main>
 
-function distanceMeters(aLat,aLng,bLat,bLng){const R=6371000,toRad=x=>x*Math.PI/180;const dLat=toRad(bLat-aLat),dLng=toRad(bLng-aLng);const a=Math.sin(dLat/2)**2+Math.cos(toRad(aLat))*Math.cos(toRad(bLat))*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(a))}
-function privacyLocation(lat,lng){const protectedZone=distanceMeters(lat,lng,TAE_LAT,TAE_LNG)<=PRIVACY_RADIUS;return protectedZone?{lat:TAE_LAT,lng:TAE_LNG,protectedZone:true,label:'태릉입구역(공릉동 보호 표시)'}:{lat,lng,protectedZone:false,label:'실시간 현재 위치'}}
-function updatePublicLocation(lat,lng,accuracy=0,center=true){state.lat=lat;state.lng=lng;lastAccuracy=accuracy||0;const pub=privacyLocation(lat,lng);state.publicLat=pub.lat;state.publicLng=pub.lng;marker.setLatLng([pub.lat,pub.lng]);circle.setLatLng([pub.lat,pub.lng]);circle.setRadius(pub.protectedZone?220:Math.max(25,Math.min(accuracy||60,300)));if(center)map.setView([pub.lat,pub.lng],pub.protectedZone?15:17);const status=document.getElementById('locationStatus');if(status)status.textContent=pub.protectedZone?'🔒 공릉동 보호구역: 실제 위치 대신 태릉입구역으로 표시 중':'📡 실시간 위치 공유 중'+(accuracy?` · 오차 약 ${Math.round(accuracy)}m`:'');save()}
-function startLocationSharing(){if(!navigator.geolocation){alert('위치 기능을 지원하지 않습니다.');return}if(geoWatchId!==null)return;state.locationSharing=true;document.getElementById('shareLocationBtn').textContent='실시간 위치 공유 중';geoWatchId=navigator.geolocation.watchPosition(p=>{updatePublicLocation(p.coords.latitude,p.coords.longitude,p.coords.accuracy,true)},()=>{toast('위치 권한을 허용해 주세요');stopLocationSharing()},{enableHighAccuracy:true,maximumAge:3000,timeout:15000});save();cuteThanks('위치 공유 시작')}
-function stopLocationSharing(){if(geoWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(geoWatchId);geoWatchId=null;state.locationSharing=false;document.getElementById('shareLocationBtn').textContent='실시간 위치 시작';document.getElementById('locationStatus').textContent='위치 공유 꺼짐 · 공릉동 보호구역에서는 태릉입구역으로 표시됩니다.';save();cuteThanks('위치 공유 중지')}
+  <div id="toast" class="toast"></div>
 
-function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function save(){localStorage.setItem(KEY,JSON.stringify(state))}
-function allSlots(){let a=[];for(let h=OPEN;h<CLOSE;h++)a.push(`${String(h).padStart(2,'0')}:00`,`${String(h).padStart(2,'0')}:30`);return a}
-function day(){state.schedule[state.selectedDate]??={};return state.schedule[state.selectedDate]}
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600)}
-const thanks=['고마워요 🐰','감사합니다 🐣','잘 선택했어요 🐳','반가워요 ☁️','완료됐어요 🩵'];function cuteThanks(prefix=''){toast((prefix?prefix+' · ':'')+thanks[Math.floor(Math.random()*thanks.length)])}
-function confetti(){const c=document.getElementById('confetti');c.innerHTML='';const colors=['#6d5dfc','#ff7b91','#36b37e','#ffd166','#7ec8ff'];for(let i=0;i<34;i++){let e=document.createElement('i');e.style.left=Math.random()*100+'vw';e.style.top=(-10-Math.random()*30)+'px';e.style.background=colors[i%colors.length];e.style.animationDelay=(Math.random()*.25)+'s';c.appendChild(e)}setTimeout(()=>c.innerHTML='',1600)}
-function renderDates(){let row=document.getElementById('dateRow');row.innerHTML='';for(let i=0;i<7;i++){let d=new Date();d.setDate(d.getDate()+i);let k=dateKey(d),b=document.createElement('button');b.className='date'+(k===state.selectedDate?' active':'');b.innerHTML=`${d.getMonth()+1}/${d.getDate()}<br>${d.toLocaleDateString('ko-KR',{weekday:'short'})}`;b.onclick=()=>{state.selectedDate=k;ownerSel.clear();customerSel.clear();save();cuteThanks('날짜 선택');renderAll()};row.appendChild(b)}}
-function renderOwner(){let g=document.getElementById('ownerGrid'),d=day();g.innerHTML='';allSlots().forEach(t=>{let v=d[t],b=document.createElement('button');b.className='slot '+(v?.busy?'busy':'free')+(ownerSel.has(t)?' selected':'');b.innerHTML=v?.busy?`${t} 😢<small>${v.dong||'지역 미입력'}</small>`:`${t} 😊`;b.onclick=()=>{ownerSel.has(t)?ownerSel.delete(t):ownerSel.add(t);renderOwner()};g.appendChild(b)});let a=[...ownerSel].sort();document.getElementById('ownerSummary').textContent=a.length?`선택: ${a.join(', ')}`:'시간을 선택하세요.'}
-function renderCustomer(){let g=document.getElementById('customerGrid'),d=day();g.innerHTML='';allSlots().forEach(t=>{let v=d[t],b=document.createElement('button');b.className='slot '+(v?.busy?'busy':'free')+(customerSel.has(t)?' selected':'');b.innerHTML=v?.busy?`${t} 😢<small>예약 불가 ${v.dong||''}</small>`:`${t} 😊<small>예약 가능</small>`;b.disabled=!!v?.busy;b.onclick=()=>{customerSel.has(t)?customerSel.delete(t):customerSel.add(t);cuteThanks('시간 선택');playClick();renderCustomer()};g.appendChild(b)});let a=[...customerSel].sort();document.getElementById('customerSummary').textContent=a.length?`선택: ${a.join(', ')}`:'빈 시간을 눌러주세요.'}
-function renderStatus(){const today=dateKey(new Date()),d=state.schedule[today]||{},now=new Date(),min=now.getHours()*60+now.getMinutes(),slots=allSlots(),cur=slots.find(t=>{let[h,m]=t.split(':').map(Number),s=h*60+m;return min>=s&&min<s+30}),busy=cur&&d[cur]?.busy;if(min>=CLOSE*60){setHero(false,'오늘 마감','예약 종료','내일 예약을 확인해 주세요');return}if(!busy){let next=slots.find(t=>{let[h,m]=t.split(':').map(Number);return d[t]?.busy&&h*60+m>min});setHero(true,'지금 가능','예약 가능해요 😊',next?`${next}부터 ${d[next].dong||'다른 지역'} 예약이 있어요`:'오늘 남은 시간 예약 가능');return}let i=slots.indexOf(cur);while(i+1<slots.length&&d[slots[i+1]]?.busy)i++;let[h,m]=slots[i].split(':').map(Number),end=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m+30),diff=Math.max(1,Math.ceil((end-now)/60000));setHero(false,diff>=60?`${Math.floor(diff/60)}시간 ${diff%60?diff%60+'분':''}`:`${diff}분`,'지금은 예약이 어려워요 😢',`${d[cur].dong||'현재 지역'} 작업 중 · ${end.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}부터 가능`)}
-function setHero(ok,big,line,sub){document.getElementById('character').innerHTML=ok?happySVG:sadSVG;document.getElementById('bigText').textContent=big;document.getElementById('stateLine').textContent=line;document.getElementById('subText').textContent=sub}
-function renderAll(){renderDates();renderOwner();renderCustomer();renderStatus()}
+  <dialog id="editDialog">
+    <form method="dialog" id="editForm">
+      <h2>예약 수정</h2>
+      <input type="hidden" id="editId" />
+      <label>이름<input id="editName" /></label>
+      <label>연락처<input id="editPhone" /></label>
+      <label>동네<input id="editDong" /></label>
+      <label>날짜<input id="editDate" type="date" /></label>
+      <label>시간<select id="editTime"></select></label>
+      <label>상태
+        <select id="editStatus">
+          <option value="신청">신청</option>
+          <option value="확정">확정</option>
+          <option value="완료">완료</option>
+          <option value="취소">취소</option>
+        </select>
+      </label>
+      <label>요청사항<textarea id="editMemo"></textarea></label>
+      <div class="dialog-actions">
+        <button value="cancel" class="secondary">닫기</button>
+        <button id="saveEditBtn" value="default" class="primary">저장</button>
+      </div>
+    </form>
+  </dialog>
 
-document.getElementById('applyDongBtn').onclick=()=>{const dong=document.getElementById('dongName').value.trim();if(!ownerSel.size){toast('시간을 먼저 선택해 주세요');return}if(!dong){toast('동 이름을 입력해 주세요');return}let d=day();ownerSel.forEach(t=>{d[t]={busy:true,dong}});save();cuteThanks(`${dong} 저장`);renderAll()}
-document.getElementById('blockBtn').onclick=()=>{let dong=document.getElementById('dongName').value.trim(),d=day();if(!ownerSel.size){toast('시간을 먼저 선택해 주세요');return}ownerSel.forEach(t=>d[t]={busy:true,dong});ownerSel.clear();save();cuteThanks('예약 불가 저장');renderAll()}
-document.getElementById('unblockBtn').onclick=()=>{let d=day();ownerSel.forEach(t=>delete d[t]);ownerSel.clear();save();cuteThanks('예약 가능 변경');renderAll()}
-document.getElementById('customerViewBtn').onclick=()=>{app.classList.add('customer');document.getElementById('modeBtn').textContent='고객 화면'}
-document.getElementById('modeBtn').onclick=()=>{app.classList.toggle('customer');document.getElementById('modeBtn').textContent=app.classList.contains('customer')?'고객 화면':'관리자 화면'}
-document.getElementById('locateBtn').onclick=()=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>{updatePublicLocation(p.coords.latitude,p.coords.longitude,p.coords.accuracy,true);cuteThanks('현재 위치 반영')},()=>alert('위치 권한을 허용해 주세요'),{enableHighAccuracy:true,timeout:15000}):alert('위치 기능을 지원하지 않습니다.')
-document.getElementById('shareLocationBtn').onclick=startLocationSharing
-document.getElementById('stopLocationBtn').onclick=stopLocationSharing
-document.getElementById('reserveBtn').onclick=()=>{let times=[...customerSel].sort();if(!times.length){toast('예약 시간을 먼저 골라주세요');return}const name=document.getElementById('name').value.trim()||'고객';const phone=document.getElementById('phone').value.trim();const reservation={date:state.selectedDate,times,name,phone,createdAt:new Date().toISOString()};state.notifications=state.notifications||[];state.notifications.unshift(reservation);save();confetti();playSuccess();cuteThanks('예약 요청 완료');sendOwnerNotification(reservation);customerSel.clear();renderCustomer()}
-function sendOwnerNotification(r){const body=`${r.date} ${r.times.join(', ')} · ${r.name}${r.phone?' · '+r.phone:''}`;if('Notification'in window&&Notification.permission==='granted'){new Notification('비움과채움 새 예약 🩵',{body,icon:'icon.svg',tag:'biumchaeum-reservation'})}}
-document.getElementById('notifyBtn').onclick=async()=>{if(!('Notification'in window)){toast('이 브라우저는 알림을 지원하지 않아요');return}const result=await Notification.requestPermission();result==='granted'?cuteThanks('예약 알림 허용 완료'):toast('알림 권한이 허용되지 않았어요')}
-
-function tone(freq,dur=.18,vol=.025){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur)}
-function playClick(){if(musicOn)tone(660,.12,.02)}
-function playSuccess(){tone(523,.13,.03);setTimeout(()=>tone(659,.13,.03),130);setTimeout(()=>tone(784,.25,.03),260)}
-function startMusic(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();const notes=[261,329,392,329,294,349,440,349];let i=0;musicTimer=setInterval(()=>tone(notes[i++%notes.length],.7,.008),850);tone(notes[0],.7,.008)}
-function stopMusic(){clearInterval(musicTimer);musicTimer=null}
-document.getElementById('musicBtn').onclick=()=>{musicOn=!musicOn;document.getElementById('musicBtn').textContent=musicOn?'🔇 음악 끄기':'🎵 음악 켜기';musicOn?startMusic():stopMusic()}
-setInterval(renderStatus,30000);renderAll();if(state.locationSharing)setTimeout(startLocationSharing,600);if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
-</script>
-</body></html>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
