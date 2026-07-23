@@ -1,10 +1,10 @@
 {
-  "name": "비움과채움 실시간 예약",
+  "name": "비움과채움 예약",
   "short_name": "비움과채움",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f8f7ff",
-  "theme_color": "#6d5dfc",
+  "background_color": "#eef9ff",
+  "theme_color": "#9fd8f5",
   "icons": [
     {
       "src": "icon.svg",
