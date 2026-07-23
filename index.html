@@ -1,104 +1,720 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#bfe8ff" />
-  <title>비움과채움</title>
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="preconnect" href="https://unpkg.com">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#8ed4f6">
+<title>비움과채움 V19 실시간 예약</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --bg:#eaf8ff; --card:#fff; --ink:#1f2a44; --muted:#77859a;
+  --line:#d7ebf7; --sky:#6ec7f2; --sky2:#9fe0fb;
+  --mint:#effff8; --mint-line:#c6efdf; --mint-ink:#108b70;
+  --red:#fff1f3; --red-line:#ffd4dc; --red-ink:#c54c5e;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;
+  color:var(--ink);background:linear-gradient(180deg,#eaf8ff,#f8fcff);
+}
+button,input,textarea,select{font:inherit}
+button{border:0;cursor:pointer}
+header{
+  background:#fff;padding:14px 16px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000;
+}
+.brand-wrap{display:flex;align-items:center;gap:12px}
+.logo{
+  width:58px;height:58px;border-radius:18px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--sky),var(--sky2));color:#fff;font-size:22px;font-weight:900;
+  box-shadow:0 10px 24px rgba(65,165,220,.22)
+}
+.brand{font-size:24px;font-weight:900}.sub{font-size:13px;color:var(--muted);margin-top:3px}
+.actions{display:flex;gap:8px}
+.top-btn{padding:12px 14px;border-radius:16px;background:#f5fbff;color:#258bc5;border:1px solid var(--line);font-weight:900}
+.ticker{overflow:hidden;white-space:nowrap;background:#f5fbff;border-bottom:1px solid var(--line);color:#2288c3;font-weight:900;padding:10px 0}
+.track{display:inline-block;min-width:100%;padding-left:100%;animation:move 18s linear infinite}
+@keyframes move{to{transform:translateX(-100%)}}
+main{max-width:760px;margin:auto;padding:12px}
+.card{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:0 10px 28px rgba(61,137,180,.10);margin-bottom:14px;padding:16px}
+.map-card{padding:0;overflow:hidden;position:relative}
+#map{height:255px}
+.driver-badge{
+  display:none;position:absolute;right:16px;top:16px;left:auto;transform:none;z-index:600;
+  background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:18px;
+  padding:11px 16px;box-shadow:0 10px 24px rgba(50,110,150,.16);font-weight:900;white-space:nowrap;text-align:center
+}
+.driver-badge small{display:block;color:#20a578;margin-top:3px}
+.status-mini-badge{
+  position:absolute;left:14px;top:14px;z-index:610;display:none;align-items:center;gap:7px;
+  background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:999px;
+  padding:9px 13px;box-shadow:0 8px 20px rgba(50,110,150,.14);font-size:13px;font-weight:900
+}
+.status-mini-badge.show{display:flex}
+.map-status-card{transition:opacity .45s ease,transform .45s ease}
+.map-status-card.auto-hidden{opacity:0;pointer-events:none;transform:translate(-50%,-38%) scale(.97)}
+
+.map-status-card{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-43%);
+  z-index:590;
+  width:min(86%,560px);
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:18px 20px;
+  border-radius:24px;
+  background:rgba(255,255,255,.86);
+  border:1px solid rgba(215,235,247,.95);
+  box-shadow:0 14px 34px rgba(61,137,180,.18);
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+}
+.status-copy{min-width:0}
+.map-status-card .status-title{font-size:34px}
+.map-status-card .work-detail{max-width:100%;word-break:keep-all}
+.map-status-card.status-moving{background:rgba(245,252,255,.9)}
+.map-status-card.status-working{background:rgba(255,255,255,.9)}
+.map-status-card.status-off{background:rgba(250,252,255,.9)}
+
+.status-emoji{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;background:#fff4a8;font-size:50px;flex:0 0 auto}
+.status-kicker{font-size:18px;font-weight:900;color:#2f9ed8}
+.status-title{font-size:36px;font-weight:900;line-height:1.05;margin:4px 0 7px}
+.status-detail{font-size:16px;color:var(--muted);line-height:1.5}
+.work-detail{display:none;margin-top:8px;font-size:13px;line-height:1.55;color:#4a6178}
+.section-title{font-size:20px;font-weight:900;margin-bottom:10px}
+.note{font-size:13px;color:var(--muted);line-height:1.55}
+.date-row{display:flex;gap:9px;overflow:auto;padding-bottom:3px}
+.date-btn{min-width:94px;padding:15px 10px;border-radius:18px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--ink)}
+.date-btn.on{color:#fff;border-color:transparent;background:linear-gradient(135deg,var(--sky),var(--sky2));box-shadow:0 8px 18px rgba(61,171,225,.22)}
+.times,.admin-times{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.time,.admin-time{
+  min-height:76px;padding:10px 5px;border-radius:17px;background:var(--mint);color:var(--mint-ink);
+  border:1px solid var(--mint-line);font-weight:900;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px
+}
+.time.busy,.admin-time.closed{background:var(--red);color:var(--red-ink);border-color:var(--red-line)}
+.time.sel{background:linear-gradient(135deg,var(--sky),var(--sky2));color:#fff;border-color:transparent}
+.time-main{font-size:17px;line-height:1.15}
+.time-meta{font-size:11px;line-height:1.2;text-align:center;word-break:keep-all}
+.fields{display:grid;gap:10px;margin-top:14px}
+input,textarea,select{width:100%;padding:13px 14px;border-radius:15px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.reserve{width:100%;margin-top:13px;padding:16px;border-radius:18px;background:linear-gradient(135deg,var(--sky),#55b9ed);color:#fff;font-weight:900;font-size:18px;box-shadow:0 9px 22px rgba(61,171,225,.23)}
+.admin{display:none}.admin.show{display:block}
+.location-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.start{background:var(--mint);color:var(--mint-ink);padding:13px;border-radius:15px;font-weight:900}
+.stop{background:var(--red);color:var(--red-ink);padding:13px;border-radius:15px;font-weight:900}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#243147;color:#fff;padding:13px 18px;border-radius:999px;font-weight:900;opacity:0;pointer-events:none;transition:.25s;z-index:5000}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.smile-face{position:relative;background:linear-gradient(145deg,#fff6b7,#ffe37f)}
+.smile-face .eye{position:absolute;width:10px;height:14px;background:#263044;border-radius:50%;top:27px}
+.smile-face .eye-left{left:24px}.smile-face .eye-right{right:24px}
+.smile-face .cheek{position:absolute;width:15px;height:10px;background:#ff9d9d;border-radius:50%;top:44px;opacity:.9}
+.smile-face .cheek-left{left:14px}.smile-face .cheek-right{right:14px}
+.smile-face .mouth{position:absolute;left:50%;bottom:20px;width:38px;height:20px;transform:translateX(-50%);border-bottom:5px solid #263044;border-radius:0 0 40px 40px}
+.status-emoji.vehicle-face{background:linear-gradient(145deg,#dff5ff,#a8dcfa);font-size:46px}
+.status-emoji.vehicle-face .eye,.status-emoji.vehicle-face .cheek,.status-emoji.vehicle-face .mouth{display:none}
+
+@media(max-width:520px){
+
+  .map-status-card{
+    width:88%;
+    padding:15px 16px;
+    gap:13px;
+    transform:translate(-50%,-40%);
+  }
+  .map-status-card .status-title{font-size:30px}
+  .map-status-card .status-detail{font-size:14px}
+  .map-status-card .work-detail{font-size:12px}
+
+  header{padding:12px}.logo{width:54px;height:54px}.brand{font-size:22px}.top-btn{padding:10px 11px}
+  #map{height:235px}.status-title{font-size:32px}
+}
+</style>
 </head>
 <body>
-  <main class="app">
-    <header class="hero">
-      <div class="logo">☁️</div>
-      <div>
-        <h1>비움과채움</h1>
-        <p>편안하게 예약하고, 따뜻하게 채워드려요 💙</p>
+<header>
+  <div class="brand-wrap">
+    <div class="logo">비채</div>
+    <div><div class="brand">비움과채움</div><div class="sub">실시간 예약</div></div>
+  </div>
+  <div class="actions">
+    <button class="top-btn" id="guideBtn">🔊 안내 듣기</button>
+    <button class="top-btn" id="adminToggle">🔒 관리자</button>
+  </div>
+</header>
+
+<div class="ticker"><div class="track" id="tickerText">안녕하세요 김재성입니다. 문의전화 010-3019-1011. 오늘도 안전한 하루 보내세요 💙</div></div>
+
+<main>
+  
+  <section class="card map-card">
+    <div id="map"></div>
+    <div class="driver-badge" id="driverBadge">🚙 김재성 기사님 위치<small>● 현재 이동 중입니다</small></div>
+    <div class="status-mini-badge" id="statusMiniBadge">😊 지금 가능</div>
+
+    <div class="map-status-card" id="mapStatusCard">
+      <div class="status-emoji smile-face" id="statusEmoji" aria-label="상태 이모티콘">
+        <span class="eye eye-left"></span>
+        <span class="eye eye-right"></span>
+        <span class="cheek cheek-left"></span>
+        <span class="cheek cheek-right"></span>
+        <span class="mouth"></span>
       </div>
-    </header>
-
-    <section class="card status-card">
-      <div>
-        <span class="eyebrow">오늘의 상태</span>
-        <h2 id="shopStatus">😊 예약 가능</h2>
-        <p id="locationText">📍 위치 공유가 꺼져 있습니다.</p>
+      <div class="status-copy">
+        <div class="status-kicker" id="statusKicker">예약 가능해요 😊</div>
+        <div class="status-title" id="statusTitle">지금 가능</div>
+        <div class="status-detail" id="statusDetail">오늘 남은 시간 예약 가능</div>
+        <div class="work-detail" id="workDetail"></div><div class="note" id="seoulClock" style="margin-top:5px"></div>
       </div>
-      <span id="liveBadge" class="badge off">OFF</span>
-    </section>
+    </div>
+  </section>
 
-    <section class="card">
-      <h2>예약하기</h2>
-      <div class="grid">
-        <label>이름<input id="customerName" placeholder="홍길동" /></label>
-        <label>연락처<input id="customerPhone" placeholder="010-0000-0000" inputmode="tel" /></label>
-        <label>동네<input id="customerDong" placeholder="공릉동" /></label>
-        <label>날짜<input id="reserveDate" type="date" /></label>
-        <label>시간
-          <select id="reserveTime"></select>
-        </label>
-        <label class="wide">요청사항<textarea id="memo" placeholder="남기실 말씀이 있으면 적어주세요."></textarea></label>
+  <section class="card">
+    <div class="section-title">날짜 선택</div>
+    <div class="date-row" id="dates"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">예약 시간 선택</div>
+    <div class="note">시간 버튼을 선택하면 “감사합니다” 음성이 나옵니다.</div>
+    <div class="times" id="times"></div>
+
+    <div class="fields">
+      <input id="name" placeholder="고객명 (선택)">
+      <input id="phone" placeholder="전화번호 (선택)">
+      <input id="area" placeholder="작업 지역 또는 동네 (예: 공릉동)">
+      <input id="job" placeholder="작업 내용 (예: 에어컨 설치, 간판 철거)">
+      <input id="endTime" placeholder="예상 종료시간 (예: 오후 3시)">
+    </div>
+    <button class="reserve" id="reserveBtn">예약하기</button>
+    <div class="note" style="margin-top:8px">시간만 선택해도 예약할 수 있습니다.</div>
+  </section>
+
+  <section class="card admin" id="adminPanel">
+    <div class="section-title">관리자 예약 설정</div>
+    <div class="note">시간을 누르면 지역, 작업 내용, 예상 종료시간을 입력할 수 있습니다.</div>
+    <div class="admin-times" id="adminTimes"></div>
+
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
+      <div class="section-title">실시간 상태 문구</div>
+      <select id="statusMode">
+        <option value="auto">예약시간에 맞춰 자동 표시</option>
+        <option value="available">지금 가능</option>
+        <option value="moving">이동 중</option>
+        <option value="working">작업 중</option>
+        <option value="off">운행 종료</option>
+      </select>
+      <input id="statusArea" placeholder="현재 작업 지역" style="margin-top:9px">
+      <input id="statusJob" placeholder="현재 작업 내용" style="margin-top:9px">
+      <input id="statusEnd" placeholder="예상 종료시간" style="margin-top:9px">
+      <textarea id="statusMessage" rows="3" placeholder="추가 안내 문구" style="margin-top:9px"></textarea>
+      <button class="reserve" id="saveStatus">실시간 상태 저장</button>
+      <button class="top-btn" id="completeWork" style="width:100%;margin-top:8px">😊 작업 완료 · 지금 가능</button>
+    </div>
+
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
+      <div class="section-title">기사님 위치 공유</div>
+      <div class="location-actions">
+        <button class="start" id="startLocation">🟢 출근 · 위치 표시</button>
+        <button class="stop" id="stopLocation">🔴 퇴근 · 위치 삭제</button>
       </div>
-      <button id="reserveBtn" class="primary">예약 신청하기 😊</button>
-      <p class="hint">예약은 관리자 확인 후 최종 확정됩니다.</p>
-    </section>
+    </div>
 
-    <section class="card">
-      <h2>현재 위치 안내</h2>
-      <div id="map"></div>
-      <p class="hint">공릉동 안에서는 실제 위치 대신 태릉입구역으로 표시됩니다.</p>
-    </section>
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
+      <div class="section-title">상단 안내 문구</div>
+      <textarea id="announcementInput" rows="3"></textarea>
+      <button class="reserve" id="saveAnnouncement">안내 문구 저장</button>
+      <button class="top-btn" id="previewAnnouncement" style="width:100%;margin-top:8px">🔊 미리 듣기</button>
+    </div>
+  </section>
+</main>
 
-    <section class="card admin-card">
-      <div class="section-title">
-        <h2>관리자</h2>
-        <button id="adminLoginBtn" class="small">관리자 열기</button>
-      </div>
+<div class="toast" id="toast"></div>
 
-      <div id="adminPanel" class="hidden">
-        <div class="admin-actions">
-          <button id="startWorkBtn" class="success">🟢 출근 · 위치 공유 시작</button>
-          <button id="stopWorkBtn" class="danger">🔴 퇴근 · 위치 공유 종료</button>
-          <button id="toggleBookingBtn" class="secondary">예약 가능/불가 변경</button>
-        </div>
+<div id="adminLock" style="display:none;position:fixed;inset:0;background:rgba(20,30,45,.45);z-index:4000;align-items:center;justify-content:center;padding:18px">
+  <div style="width:min(380px,100%);background:#fff;border-radius:24px;padding:22px;box-shadow:0 18px 55px rgba(0,0,0,.22)">
+    <div class="section-title">관리자 확인</div>
+    <div class="note">관리자 비밀번호를 입력해 주세요.</div>
+    <input id="adminPin" type="password" inputmode="numeric" maxlength="8" placeholder="비밀번호" style="margin-top:14px">
+    <button id="adminLogin" class="reserve">관리자 들어가기</button>
+    <button id="adminCancel" class="top-btn" style="width:100%;margin-top:8px">취소</button>
+  </div>
+</div>
 
-        <h3>예약 목록</h3>
-        <div id="reservationList" class="reservation-list"></div>
-      </div>
-    </section>
-  </main>
+<div id="slotEditor" style="display:none;position:fixed;inset:0;background:rgba(20,30,45,.45);z-index:4100;align-items:center;justify-content:center;padding:18px">
+  <div style="width:min(420px,100%);background:#fff;border-radius:24px;padding:22px;box-shadow:0 18px 55px rgba(0,0,0,.22)">
+    <div class="section-title">시간별 작업 정보</div>
+    <div class="note" id="slotTitle"></div>
+    <input id="slotArea" placeholder="작업 지역 (예: 공릉동)" style="margin-top:12px">
+    <input id="slotJob" placeholder="작업 내용 (예: 에어컨 가스 주입)" style="margin-top:9px">
+    <input id="slotEnd" placeholder="예상 종료시간 (예: 오후 3시)" style="margin-top:9px">
+    <button id="saveSlot" class="reserve">작업 정보 저장 · 마감</button>
+    <button id="openSlot" class="top-btn" style="width:100%;margin-top:8px">예약 가능으로 다시 열기</button>
+    <button id="cancelSlot" class="top-btn" style="width:100%;margin-top:8px">취소</button>
+  </div>
+</div>
 
-  <div id="toast" class="toast"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const ADMIN_PIN='1011';
+const TAE={lat:37.61769,lng:127.07567};
+const GONGNEUNG={lat:37.6256,lng:127.0731,radius:2200};
+const TIMES=[];
+for(let h=8;h<=22;h++){
+  TIMES.push(String(h).padStart(2,'0')+':00');
+  if(h<22) TIMES.push(String(h).padStart(2,'0')+':30');
+}
+const STORE='biumchaeum-v19';
+const DEFAULT_ANNOUNCEMENT='안녕하세요 김재성입니다. 문의전화 010-3019-1011. 오늘도 안전한 하루 보내세요 💙';
 
-  <dialog id="editDialog">
-    <form method="dialog" id="editForm">
-      <h2>예약 수정</h2>
-      <input type="hidden" id="editId" />
-      <label>이름<input id="editName" /></label>
-      <label>연락처<input id="editPhone" /></label>
-      <label>동네<input id="editDong" /></label>
-      <label>날짜<input id="editDate" type="date" /></label>
-      <label>시간<select id="editTime"></select></label>
-      <label>상태
-        <select id="editStatus">
-          <option value="신청">신청</option>
-          <option value="확정">확정</option>
-          <option value="완료">완료</option>
-          <option value="취소">취소</option>
-        </select>
-      </label>
-      <label>요청사항<textarea id="editMemo"></textarea></label>
-      <div class="dialog-actions">
-        <button value="cancel" class="secondary">닫기</button>
-        <button id="saveEditBtn" value="default" class="primary">저장</button>
-      </div>
-    </form>
-  </dialog>
+let data;
+try{data=JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){data={}}
+data.schedule ||= {};
+data.reservations ||= [];
+data.manual ||= {mode:'auto',area:'',job:'',end:'',message:''};
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js"></script>
+let selectedDate=dateKey(new Date());
+let selected=new Set();
+let adminUnlocked=false;
+let editingSlot=null;
+let watchId=null;
+let marker=null;
+let statusHideTimer=null;
+let lastStatusSignature='';
+
+function dateKey(d){
+  const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+  return local.toISOString().slice(0,10);
+}
+function save(){localStorage.setItem(STORE,JSON.stringify(data))}
+function toast(msg){
+  const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2200);
+}
+function speak(text){
+  if(!('speechSynthesis' in window)||!text)return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);u.lang='ko-KR';u.rate=.96;speechSynthesis.speak(u);
+}
+function clickSound(){
+  try{
+    const a=new AudioContext(),o=a.createOscillator(),g=a.createGain();
+    o.frequency.value=680;g.gain.setValueAtTime(.04,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.12);
+    o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.12);
+  }catch(e){}
+}
+function distance(a,b,c,d){
+  const R=6371000,p=Math.PI/180;
+  const x=(c-a)*p,y=(d-b)*p;
+  const q=Math.sin(x/2)**2+Math.cos(a*p)*Math.cos(c*p)*Math.sin(y/2)**2;
+  return 2*R*Math.asin(Math.sqrt(q));
+}
+function protectedPoint(lat,lng){return distance(lat,lng,GONGNEUNG.lat,GONGNEUNG.lng)<=GONGNEUNG.radius}
+
+
+const vehicleIcon=L.divIcon({
+  className:'vehicle-marker-wrap',
+  html:'<div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#6ec7f2,#3aa9e8);border:4px solid #fff;box-shadow:0 8px 18px rgba(43,143,200,.35);display:grid;place-items:center;font-size:24px">🚙</div>',
+  iconSize:[46,46],
+  iconAnchor:[23,23],
+  popupAnchor:[0,-24]
+});
+
+const map=L.map('map').setView([TAE.lat,TAE.lng],15);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+
+function showLocation(lat,lng){
+  let showLat=lat,showLng=lng;
+  if(protectedPoint(lat,lng)){showLat=TAE.lat;showLng=TAE.lng}
+  if(!marker) marker=L.marker([showLat,showLng],{icon:vehicleIcon}).addTo(map).bindPopup('🚙 김재성 기사님 위치');
+  else marker.setLatLng([showLat,showLng]);
+  map.setView([showLat,showLng],16);
+  document.getElementById('driverBadge').style.display='block';
+}
+function startLocation(){
+  if(!adminUnlocked){toast('관리자만 사용할 수 있습니다');return}
+  // 즉시 태릉입구역 5번 출구 기준 아이콘을 표시하고, GPS가 잡히면 실제/보호 위치로 갱신
+  showLocation(TAE.lat,TAE.lng);
+  document.getElementById('driverBadge').style.display='block';
+  data.manual={mode:'moving',area:data.manual.area||'',job:data.manual.job||'',end:data.manual.end||'',message:data.manual.message||''};
+  save();refreshStatus();
+  if(!navigator.geolocation){
+    toast('지도에 운행 아이콘을 표시했습니다');
+    speak('김재성 기사가 운행을 시작했습니다.');
+    return;
+  }
+  if(watchId!==null)navigator.geolocation.clearWatch(watchId);
+  watchId=navigator.geolocation.watchPosition(
+    p=>showLocation(p.coords.latitude,p.coords.longitude),
+    ()=>{
+      toast('GPS 권한이 없어 태릉입구역 5번 출구 기준으로 표시합니다');
+    },
+    {enableHighAccuracy:true,maximumAge:2000,timeout:15000}
+  );
+  toast('운행을 시작했습니다');
+  speak('김재성 기사가 운행을 시작했습니다.');
+}
+function stopLocation(){
+  if(!adminUnlocked){toast('관리자만 사용할 수 있습니다');return}
+  if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null}
+  if(marker){map.removeLayer(marker);marker=null}
+  document.getElementById('driverBadge').style.display='none';
+  map.setView([TAE.lat,TAE.lng],15);
+  data.manual={mode:'off',area:'',job:'',end:'',message:'예약은 계속 가능합니다.'};
+  save();refreshStatus();
+  toast('운행을 종료하고 위치 아이콘을 삭제했습니다');
+  speak('오늘 운행이 종료되었습니다. 예약은 계속 가능합니다.');
+}
+
+function day(){data.schedule[selectedDate] ||= {};return data.schedule[selectedDate]}
+
+function renderDates(){
+  const box=document.getElementById('dates');box.innerHTML='';
+  for(let i=0;i<30;i++){
+    const d=new Date();d.setDate(d.getDate()+i);
+    const k=dateKey(d),dow=['일','월','화','수','목','금','토'][d.getDay()];
+    const b=document.createElement('button');
+    b.className='date-btn'+(k===selectedDate?' on':'');
+    b.innerHTML=`${d.getMonth()+1}/${d.getDate()}<br>${dow}${i===0?' · 오늘':''}`;
+    b.onclick=()=>{selectedDate=k;selected.clear();renderAll()};
+    box.appendChild(b);
+  }
+}
+function renderTimes(){
+  const box=document.getElementById('times');box.innerHTML='';
+  const d=day();
+  TIMES.forEach(t=>{
+    const item=d[t]||{},busy=!!item.busy;
+    const b=document.createElement('button');
+    b.className='time'+(busy?' busy':selected.has(t)?' sel':'');
+    const meta=[item.area,item.job].filter(Boolean);
+    b.innerHTML=`<span class="time-main">${busy?(item.completed?t+' 완료':t+' 마감'):t}</span>${meta.length?`<span class="time-meta">${meta.join('<br>')}</span>`:''}`;
+    b.disabled=busy;
+    b.onclick=()=>{selected.has(t)?selected.delete(t):selected.add(t);clickSound();speak('감사합니다');renderTimes()};
+    box.appendChild(b);
+  });
+}
+function openSlotEditor(t){
+  editingSlot=t;const item=day()[t]||{};
+  document.getElementById('slotTitle').textContent=`${selectedDate} · ${t}`;
+  document.getElementById('slotArea').value=item.area||'';
+  document.getElementById('slotJob').value=item.job||'';
+  document.getElementById('slotEnd').value=item.endTime||'';
+  document.getElementById('slotEditor').style.display='flex';
+}
+function renderAdmin(){
+  const box=document.getElementById('adminTimes');box.innerHTML='';
+  const d=day();
+  TIMES.forEach(t=>{
+    const item=d[t]||{},closed=!!item.busy;
+    const b=document.createElement('button');
+    b.className='admin-time'+(closed?' closed':'');
+    const meta=[item.area,item.job].filter(Boolean);
+    b.innerHTML=`<span class="time-main">${closed?(item.completed?t+' 완료':t+' 마감'):t+' 가능'}</span>${meta.length?`<span class="time-meta">${meta.join('<br>')}</span>`:''}`;
+    b.onclick=()=>openSlotEditor(t);box.appendChild(b);
+  });
+}
+function currentReservation(){
+  const now=new Date();
+  const today=dateKey(now);
+  const mins=now.getHours()*60+now.getMinutes();
+  const todaySchedule=data.schedule[today]||{};
+
+  // 현재 30분 시간칸을 우선 확인합니다.
+  for(const t of TIMES){
+    const [h,m]=t.split(':').map(Number);
+    const start=h*60+m;
+    if(mins>=start && mins<start+30){
+      const slot=todaySchedule[t];
+      if(slot && slot.busy && !slot.completed){
+        return {
+          date:today,
+          times:[t],
+          area:slot.area||'',
+          job:slot.job||'',
+          endTime:slot.endTime||'',
+          name:slot.name||'',
+          phone:slot.phone||''
+        };
+      }
+    }
+  }
+
+  // 예전 저장 방식의 예약 배열도 보조로 확인합니다.
+  return data.reservations.find(r=>{
+    if(r.date!==today)return false;
+    return (r.times||[]).some(t=>{
+      const [h,m]=t.split(':').map(Number);
+      const start=h*60+m;
+      return mins>=start && mins<start+30;
+    });
+  })||null;
+}
+function showStatusCard(signature){
+  const card=document.getElementById('mapStatusCard');
+  const mini=document.getElementById('statusMiniBadge');
+  if(signature!==lastStatusSignature){
+    lastStatusSignature=signature;
+    card.classList.remove('auto-hidden');
+    mini.classList.remove('show');
+    clearTimeout(statusHideTimer);
+    statusHideTimer=setTimeout(()=>{
+      card.classList.add('auto-hidden');
+      mini.classList.add('show');
+    },5000);
+  }
+}
+
+function setStatus(mode,info={}){
+  const emoji=document.getElementById('statusEmoji');
+  const kicker=document.getElementById('statusKicker');
+  const title=document.getElementById('statusTitle');
+  const detail=document.getElementById('statusDetail');
+  const work=document.getElementById('workDetail');
+  const card=document.getElementById('mapStatusCard');
+
+  card.className='map-status-card';
+
+  const setVehicle=(symbol)=>{
+    emoji.className='status-emoji vehicle-face';
+    emoji.textContent=symbol;
+  };
+
+  const setSmile=()=>{
+    emoji.className='status-emoji smile-face';
+    emoji.innerHTML='<span class="eye eye-left"></span><span class="eye eye-right"></span><span class="cheek cheek-left"></span><span class="cheek cheek-right"></span><span class="mouth"></span>';
+  };
+
+  if(mode==='working'){
+    card.classList.add('status-working');
+    setVehicle('🚜');
+    kicker.textContent='현재 작업 중입니다';
+    title.textContent='지금 작업중';
+    detail.textContent=info.message||'현재 작업을 진행하고 있습니다.';
+    const parts=[
+      info.area?`📍 ${info.area}`:'',
+      info.job?`🛠 ${info.job}`:'',
+      info.end?`⏰ 예상 종료 ${info.end}`:''
+    ].filter(Boolean);
+    work.textContent=parts.join('  ·  ');
+    work.style.display=parts.length?'block':'none';
+  }else if(mode==='moving'){
+    card.classList.add('status-moving');
+    setVehicle('🚙');
+    kicker.textContent='운행 중이에요';
+    title.textContent=info.area||'이동 중';
+    detail.textContent=info.job||info.message||'안전하게 이동하고 있습니다.';
+    const parts=[info.end?`⏰ 예상 종료 ${info.end}`:''].filter(Boolean);
+    work.textContent=parts.join('  ·  ');
+    work.style.display=parts.length?'block':'none';
+  }else if(mode==='off'){
+    card.classList.add('status-off');
+    setSmile();
+    kicker.textContent='오늘 운행 종료';
+    title.textContent='예약 가능';
+    detail.textContent=info.message||'예약은 계속 가능합니다.';
+    work.style.display='none';
+  }else{
+    card.classList.add('status-available');
+    setSmile();
+    kicker.textContent='예약 가능해요 😊';
+    title.textContent='지금 가능';
+    detail.textContent=info.message||'오늘 남은 시간 예약 가능';
+    work.style.display='none';
+  }
+
+  const mini=document.getElementById('statusMiniBadge');
+  const miniText=mode==='working'?'🚜 작업중':mode==='moving'?'🚙 이동 중':mode==='off'?'🌙 운행 종료':'😊 지금 가능';
+  mini.textContent=miniText+(info.area?` · ${info.area}`:'');
+  showStatusCard(JSON.stringify([mode,info.area||'',info.job||'',info.end||'',info.message||'']));
+}
+function refreshStatus(){
+  const m=data.manual||{};
+
+  // 관리자가 '지금 가능' 또는 '운행 종료'로 직접 바꾸면 자동 예약판정보다 우선합니다.
+  if(m.mode==='available'){
+    setStatus('available',{message:m.message});
+    return;
+  }
+  if(m.mode==='off'){
+    setStatus('off',{message:m.message});
+    return;
+  }
+
+  // 현재 시간이 예약/마감 시간이고 완료 처리되지 않았다면 작업중으로 표시합니다.
+  const r=currentReservation();
+  if(r){
+    setStatus('working',{
+      area:r.area,
+      job:r.job||'예약 작업 진행 중',
+      end:r.endTime
+    });
+    return;
+  }
+
+  if(m.mode&&m.mode!=='auto'){
+    setStatus(m.mode,{area:m.area,job:m.job,end:m.end,message:m.message});
+    return;
+  }
+
+  setStatus('available');
+}
+
+function updateSeoulClock(){
+  const now=new Date();
+  const text=new Intl.DateTimeFormat('ko-KR',{
+    timeZone:'Asia/Seoul',
+    month:'numeric',day:'numeric',weekday:'short',
+    hour:'2-digit',minute:'2-digit',hour12:false
+  }).format(now);
+  const el=document.getElementById('seoulClock');
+  if(el)el.textContent='서울시간 '+text;
+}
+
+function renderAll(){renderDates();renderTimes();renderAdmin();refreshStatus()}
+
+document.getElementById('reserveBtn').onclick=()=>{
+  const times=[...selected].sort();
+  if(!times.length){toast('예약 시간을 먼저 선택해 주세요');return}
+  const d=day();
+  if(times.some(t=>d[t]?.busy)){toast('이미 마감된 시간이 포함되어 있습니다');renderAll();return}
+  const rec={
+    id:Date.now(),date:selectedDate,times,
+    name:document.getElementById('name').value.trim()||'미입력',
+    phone:document.getElementById('phone').value.trim()||'미입력',
+    area:document.getElementById('area').value.trim(),
+    job:document.getElementById('job').value.trim(),
+    endTime:document.getElementById('endTime').value.trim(),
+    createdAt:new Date().toISOString()
+  };
+  data.reservations.push(rec);
+  times.forEach(t=>d[t]={busy:true,completed:false,...rec});
+  save();selected.clear();renderAll();toast('예약되었습니다. 감사합니다');speak('예약되었습니다');
+};
+
+document.getElementById('saveSlot').onclick=()=>{
+  if(!adminUnlocked||!editingSlot){toast('관리자만 사용할 수 있습니다');return}
+  const d=day(),prev=d[editingSlot]||{};
+  d[editingSlot]={...prev,busy:true,completed:false,area:document.getElementById('slotArea').value.trim(),job:document.getElementById('slotJob').value.trim(),endTime:document.getElementById('slotEnd').value.trim(),name:prev.name||'관리자 등록'};
+  save();document.getElementById('slotEditor').style.display='none';renderAll();toast('시간별 작업 정보를 저장했습니다');
+};
+document.getElementById('openSlot').onclick=()=>{
+  if(!adminUnlocked||!editingSlot){toast('관리자만 사용할 수 있습니다');return}
+  delete day()[editingSlot];save();document.getElementById('slotEditor').style.display='none';renderAll();toast('예약 가능 시간으로 변경했습니다');
+};
+document.getElementById('cancelSlot').onclick=()=>document.getElementById('slotEditor').style.display='none';
+
+document.getElementById('adminToggle').onclick=()=>{
+  if(adminUnlocked){
+    adminUnlocked=false;document.getElementById('adminPanel').classList.remove('show');
+    document.getElementById('adminToggle').textContent='🔒 관리자';return;
+  }
+  document.getElementById('adminLock').style.display='flex';document.getElementById('adminPin').focus();
+};
+document.getElementById('adminCancel').onclick=()=>document.getElementById('adminLock').style.display='none';
+document.getElementById('adminLogin').onclick=()=>{
+  if(document.getElementById('adminPin').value!==ADMIN_PIN){toast('비밀번호가 맞지 않습니다');return}
+  adminUnlocked=true;document.getElementById('adminPanel').classList.add('show');
+  document.getElementById('adminLock').style.display='none';document.getElementById('adminPin').value='';
+  document.getElementById('adminToggle').textContent='🔓 관리자 종료';
+  setTimeout(()=>document.getElementById('adminPanel').scrollIntoView({behavior:'smooth'}),100);
+};
+
+document.getElementById('startLocation').onclick=startLocation;
+document.getElementById('stopLocation').onclick=stopLocation;
+
+const m=data.manual;
+document.getElementById('statusMode').value=m.mode||'auto';
+document.getElementById('statusArea').value=m.area||'';
+document.getElementById('statusJob').value=m.job||'';
+document.getElementById('statusEnd').value=m.end||'';
+document.getElementById('statusMessage').value=m.message||'';
+
+document.getElementById('saveStatus').onclick=()=>{
+  if(!adminUnlocked){toast('관리자만 수정할 수 있습니다');return}
+  const mode=document.getElementById('statusMode').value;
+  const area=document.getElementById('statusArea').value.trim();
+  const job=document.getElementById('statusJob').value.trim();
+  const end=document.getElementById('statusEnd').value.trim();
+  const message=document.getElementById('statusMessage').value.trim();
+  data.manual={mode,area,job,end,message};
+
+  // 작업 중 저장 시 현재 시각과 가장 가까운 30분 시간칸에도 동일 정보 자동 반영
+  if(mode==='working'){
+    const now=new Date();
+    const mins=now.getHours()*60+now.getMinutes();
+    let nearest=TIMES[0],best=1e9;
+    TIMES.forEach(t=>{
+      const [h,m]=t.split(':').map(Number);
+      const diff=Math.abs(h*60+m-mins);
+      if(diff<best){best=diff;nearest=t}
+    });
+    const todayKey=dateKey(now);
+    data.schedule[todayKey] ||= {};
+    data.schedule[todayKey][nearest]={
+      ...(data.schedule[todayKey][nearest]||{}),
+      busy:true,area,job,endTime:end,name:'관리자 현재 작업'
+    };
+  }
+  save();renderAll();toast('실시간 상태와 시간표를 함께 저장했습니다');
+};
+document.getElementById('completeWork').onclick=()=>{
+  if(!adminUnlocked){toast('관리자만 사용할 수 있습니다');return}
+
+  const now=new Date();
+  const today=dateKey(now);
+  const mins=now.getHours()*60+now.getMinutes();
+  const schedule=data.schedule[today]||{};
+
+  // 현재 시간칸을 '작업 완료'로 표시해서 더 이상 자동 작업중으로 잡히지 않게 합니다.
+  for(const t of TIMES){
+    const [h,m]=t.split(':').map(Number);
+    const start=h*60+m;
+    if(mins>=start && mins<start+30 && schedule[t]){
+      schedule[t].completed=true;
+      schedule[t].completedAt=now.toISOString();
+      break;
+    }
+  }
+
+  data.manual={mode:'available',area:'',job:'',end:'',message:''};
+  save();
+
+  document.getElementById('statusMode').value='available';
+  document.getElementById('statusArea').value='';
+  document.getElementById('statusJob').value='';
+  document.getElementById('statusEnd').value='';
+  document.getElementById('statusMessage').value='';
+
+  refreshStatus();
+  renderTimes();
+  renderAdmin();
+  toast('작업 완료 · 지금 가능으로 변경했습니다');
+};
+
+function getAnnouncement(){return localStorage.getItem('v19Announcement')||DEFAULT_ANNOUNCEMENT}
+document.getElementById('announcementInput').value=getAnnouncement();
+document.getElementById('tickerText').textContent=getAnnouncement();
+document.getElementById('saveAnnouncement').onclick=()=>{
+  if(!adminUnlocked){toast('관리자만 수정할 수 있습니다');return}
+  const v=document.getElementById('announcementInput').value.trim()||DEFAULT_ANNOUNCEMENT;
+  localStorage.setItem('v19Announcement',v);document.getElementById('tickerText').textContent=v;toast('안내 문구를 저장했습니다');
+};
+document.getElementById('previewAnnouncement').onclick=()=>speak(document.getElementById('announcementInput').value.trim()||DEFAULT_ANNOUNCEMENT);
+document.getElementById('guideBtn').onclick=()=>speak(getAnnouncement());
+
+renderAll();
+updateSeoulClock();
+setInterval(()=>{refreshStatus();updateSeoulClock()},15000);
+setTimeout(()=>map.invalidateSize(),300);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
+</script>
 </body>
 </html>

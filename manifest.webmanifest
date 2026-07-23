@@ -1,10 +1,10 @@
 {
-  "name": "비움과채움",
+  "name": "비움과채움 V19",
   "short_name": "비움과채움",
-  "start_url": "./",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#eaf8ff",
-  "theme_color": "#bfe8ff",
+  "theme_color": "#8ed4f6",
   "icons": [
     {
       "src": "icon.svg",
