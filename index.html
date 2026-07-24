@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#8ed4f6">
-<title>비움과채움 V19 실시간 예약</title>
+<title>비움과채움 V25 실시간 예약</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
@@ -111,12 +111,9 @@ input,textarea,select{width:100%;padding:13px 14px;border-radius:15px;border:1px
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#243147;color:#fff;padding:13px 18px;border-radius:999px;font-weight:900;opacity:0;pointer-events:none;transition:.25s;z-index:5000}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-.smile-face{position:relative;background:linear-gradient(145deg,#fff6b7,#ffe37f)}
-.smile-face .eye{position:absolute;width:10px;height:14px;background:#263044;border-radius:50%;top:27px}
-.smile-face .eye-left{left:24px}.smile-face .eye-right{right:24px}
-.smile-face .cheek{position:absolute;width:15px;height:10px;background:#ff9d9d;border-radius:50%;top:44px;opacity:.9}
-.smile-face .cheek-left{left:14px}.smile-face .cheek-right{right:14px}
-.smile-face .mouth{position:absolute;left:50%;bottom:20px;width:38px;height:20px;transform:translateX(-50%);border-bottom:5px solid #263044;border-radius:0 0 40px 40px}
+.smile-face{position:relative;background:transparent;overflow:hidden}
+.smile-face svg{display:block;width:100%;height:100%}
+.smile-face .eye,.smile-face .cheek,.smile-face .mouth{display:none}
 .status-emoji.vehicle-face{background:linear-gradient(145deg,#dff5ff,#a8dcfa);font-size:46px}
 .status-emoji.vehicle-face .eye,.status-emoji.vehicle-face .cheek,.status-emoji.vehicle-face .mouth{display:none}
 
@@ -135,6 +132,503 @@ input,textarea,select{width:100%;padding:13px 14px;border-radius:15px;border:1px
   header{padding:12px}.logo{width:54px;height:54px}.brand{font-size:22px}.top-btn{padding:10px 11px}
   #map{height:235px}.status-title{font-size:32px}
 }
+
+.time.past{background:#f1f3f6;color:#9aa4b1;border-color:#e1e5ea;cursor:not-allowed}
+.time.busy{cursor:pointer}
+.cancel-hint{display:block;margin-top:4px;font-size:10px;opacity:.85}
+.celebration{
+  display:none;position:fixed;inset:0;z-index:7000;overflow:hidden;
+  align-items:center;justify-content:center;background:rgba(235,249,255,.88);
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)
+}
+.celebration.show{display:flex}
+.celebrate-card{position:relative;z-index:20;
+  position:relative;z-index:3;width:min(86%,420px);padding:25px 22px;text-align:center;
+  background:rgba(255,255,255,.94);border:1px solid #fff;border-radius:28px;
+  box-shadow:0 22px 60px rgba(50,130,180,.24)
+}
+.celebrate-title{font-size:27px;font-weight:900}
+.celebrate-sub{margin-top:8px;color:var(--muted);font-weight:800;line-height:1.55}
+.season-particle{position:absolute;top:-12vh;font-size:27px;animation:seasonFall linear forwards}
+.season-wave{position:absolute;left:-10%;width:120%;height:28%;bottom:-8%;border-radius:48% 48% 0 0;background:rgba(61,179,235,.38);animation:seasonWave 1.7s ease-in-out infinite alternate}
+.season-wave.wave2{bottom:-14%;opacity:.58;animation-delay:.3s}
+@keyframes seasonFall{to{transform:translate(var(--drift),116vh) rotate(540deg)}}
+@keyframes seasonWave{to{transform:translateY(-30px) rotate(-2deg)}}
+
+
+/* 계절별 예약완료 시그니처 장면 */
+.celebration{background:#dff5ff}
+.season-scene{position:absolute;inset:0;overflow:hidden}
+.season-vignette{position:absolute;inset:0;box-shadow:inset 0 0 90px rgba(20,50,80,.14);pointer-events:none}
+.celebrate-card{
+  transform:translateY(22px) scale(.96);opacity:0;
+  animation:blessingCardIn .75s .55s cubic-bezier(.2,.85,.25,1) forwards;
+}
+.celebrate-title{font-size:30px;letter-spacing:-.04em}
+.celebrate-sub{font-size:16px}
+@keyframes blessingCardIn{to{transform:translateY(0) scale(1);opacity:1}}
+@keyframes driftCloud{from{transform:translateX(-28vw)}to{transform:translateX(120vw)}}
+@keyframes gullFly{from{transform:translate(-20vw,0) scale(.7)}50%{transform:translate(45vw,-22px) scale(1)}to{transform:translate(120vw,8px) scale(.75)}}
+@keyframes sunPulse{50%{transform:scale(1.08);box-shadow:0 0 75px rgba(255,232,117,.95)}}
+@keyframes seaRoll{from{transform:translateX(-7%)}to{transform:translateX(7%)}}
+@keyframes seaLift{from{transform:translateY(12px)}to{transform:translateY(-7px)}}
+@keyframes foamRush{0%{transform:translateY(32px) scaleX(.85);opacity:.25}55%{opacity:.95}100%{transform:translateY(-13px) scaleX(1.1);opacity:.2}}
+@keyframes rainFall{to{transform:translate(-16px,115vh)}}
+@keyframes rainbowReveal{from{opacity:0;transform:scale(.8) rotate(-5deg)}to{opacity:.8;transform:scale(1) rotate(0)}}
+@keyframes petalFall{to{transform:translate(var(--drift),112vh) rotate(640deg)}}
+@keyframes leafFall{0%{transform:translateY(-12vh) rotate(0)}50%{transform:translate(calc(var(--drift)*.6),48vh) rotate(260deg)}100%{transform:translate(var(--drift),112vh) rotate(620deg)}}
+@keyframes snowFall{to{transform:translate(var(--drift),112vh) rotate(260deg)}}
+@keyframes firefly{0%,100%{opacity:.15;transform:translate(0,0) scale(.7)}50%{opacity:1;transform:translate(var(--fx),var(--fy)) scale(1.35)}}
+@keyframes birdFloat{50%{transform:translateY(-9px) rotate(3deg)}}
+@keyframes grassSway{from{transform:skewX(-4deg)}to{transform:skewX(5deg)}}
+
+.summer-scene{background:linear-gradient(180deg,#64c9ff 0%,#bdeeff 48%,#21aee6 49%,#087eb7 74%,#e8c77a 75%,#f6dda1 100%)}
+.scene-sun{position:absolute;right:9%;top:8%;width:76px;height:76px;border-radius:50%;background:radial-gradient(circle,#fffbd1 0 20%,#ffe36d 46%,#ffc941 100%);box-shadow:0 0 55px rgba(255,230,108,.9);animation:sunPulse 2.4s ease-in-out infinite}
+.scene-cloud{position:absolute;width:145px;height:44px;border-radius:40px;background:rgba(255,255,255,.8);filter:drop-shadow(0 8px 8px rgba(70,140,180,.12));animation:driftCloud linear infinite}
+.scene-cloud:before,.scene-cloud:after{content:"";position:absolute;background:inherit;border-radius:50%}
+.scene-cloud:before{width:64px;height:64px;left:23px;bottom:5px}.scene-cloud:after{width:78px;height:78px;right:18px;bottom:3px}
+.scene-cloud.c1{top:13%;animation-duration:17s}.scene-cloud.c2{top:27%;transform:scale(.65);animation-duration:23s;animation-delay:-10s;opacity:.72}
+.gull{position:absolute;top:21%;font-size:30px;animation:gullFly 7.5s linear infinite;filter:drop-shadow(0 3px 3px rgba(0,0,0,.15))}
+.gull.g2{top:29%;animation-delay:-3.7s;font-size:23px}
+.sea-layer{position:absolute;left:-12%;width:124%;border-radius:48% 52% 0 0}
+.sea-layer.deep{height:33%;bottom:18%;background:linear-gradient(180deg,rgba(12,151,211,.78),rgba(1,96,158,.96));animation:seaRoll 3.8s ease-in-out infinite alternate}
+.sea-layer.mid{height:25%;bottom:16%;background:linear-gradient(180deg,rgba(83,217,243,.76),rgba(16,157,210,.9));animation:seaRoll 2.8s ease-in-out infinite alternate-reverse,seaLift 2s ease-in-out infinite alternate}
+.sea-layer.front{height:18%;bottom:14%;background:linear-gradient(180deg,rgba(172,247,255,.9),rgba(39,185,224,.9));animation:seaRoll 2.2s ease-in-out infinite alternate}
+.foam{position:absolute;left:-8%;bottom:13%;width:116%;height:48px;border-radius:50%;border-top:9px solid rgba(255,255,255,.94);filter:blur(.4px);animation:foamRush 2.4s ease-in-out infinite}
+.beach-umbrella{position:absolute;left:7%;bottom:7%;font-size:64px;filter:drop-shadow(0 8px 5px rgba(80,55,20,.2));animation:birdFloat 2.8s ease-in-out infinite}
+.palm{position:absolute;right:3%;bottom:8%;font-size:96px;transform-origin:bottom;animation:grassSway 2s ease-in-out infinite alternate}
+.rain-drop{position:absolute;top:-12vh;width:2px;height:22px;background:linear-gradient(transparent,#dff9ff);opacity:.7;animation:rainFall linear forwards}
+.rainbow{position:absolute;left:50%;top:10%;width:250px;height:125px;transform:translateX(-50%);border-radius:250px 250px 0 0;border:15px solid rgba(255,98,98,.58);border-bottom:0;box-shadow:0 -15px 0 rgba(255,187,79,.55),0 -30px 0 rgba(255,239,96,.52),0 -45px 0 rgba(89,209,122,.48),0 -60px 0 rgba(88,159,255,.47),0 -75px 0 rgba(156,98,232,.42);opacity:0;animation:rainbowReveal 1s 1.55s forwards}
+
+.spring-scene{background:linear-gradient(180deg,#bdeaff,#fff6f8 58%,#c8efb9 59%,#79bd6c)}
+.autumn-scene{background:linear-gradient(180deg,#f7a85f,#ffdca0 48%,#c46a32 49%,#73442a)}
+.winter-scene{background:linear-gradient(180deg,#7ea9d6,#d9efff 66%,#f7fbff 67%)}
+.season-ground{position:absolute;left:0;right:0;bottom:0;height:29%;background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.75))}
+.season-tree{position:absolute;right:4%;bottom:10%;font-size:105px;filter:drop-shadow(0 9px 8px rgba(50,30,20,.2));animation:birdFloat 3s ease-in-out infinite}
+.season-particle.rich{z-index:2;filter:drop-shadow(0 4px 3px rgba(70,40,30,.18))}
+.firefly{position:absolute;width:7px;height:7px;border-radius:50%;background:#fff8a5;box-shadow:0 0 15px #fff36f;animation:firefly 2.4s ease-in-out infinite}
+.winter-cabin{position:absolute;left:7%;bottom:15%;font-size:82px;filter:drop-shadow(0 8px 7px rgba(30,60,90,.2))}
+
+
+/* 상태 카드 문구 겹침·잘림 방지 */
+.map-status-card{
+  width:min(92%,680px)!important;
+  grid-template-columns:88px minmax(0,1fr)!important;
+  gap:16px!important;
+  padding:18px 20px!important;
+  align-items:center!important;
+}
+.status-emoji{width:82px!important;height:82px!important;min-width:82px!important;font-size:58px!important}
+.status-copy{min-width:0!important;width:100%!important;overflow:visible!important}
+.status-kicker{white-space:normal!important;word-break:keep-all!important;line-height:1.35!important}
+.map-status-card .status-title{
+  font-size:clamp(24px,5.5vw,34px)!important;
+  line-height:1.18!important;
+  white-space:normal!important;
+  word-break:keep-all!important;
+  overflow-wrap:anywhere!important;
+  max-width:100%!important;
+  padding-right:2px!important;
+}
+.status-detail,.work-detail{
+  white-space:normal!important;
+  word-break:keep-all!important;
+  overflow-wrap:anywhere!important;
+  line-height:1.45!important;
+}
+@media(max-width:520px){
+  .map-status-card{
+    width:94%!important;
+    grid-template-columns:68px minmax(0,1fr)!important;
+    gap:12px!important;
+    padding:15px 14px!important;
+  }
+  .status-emoji{width:64px!important;height:64px!important;min-width:64px!important;font-size:46px!important}
+  .map-status-card .status-title{font-size:clamp(21px,6.3vw,28px)!important}
+  .status-kicker{font-size:13px!important}
+}
+
+/* 현대적인 한국 여름 원두막 시네마 장면 */
+.summer-scene{
+  background:
+    linear-gradient(180deg,#78c9ec 0%,#ccefff 43%,#8ecf79 44%,#5fab56 69%,#dfc17b 70%,#b98a4f 100%)!important;
+}
+.summer-haze{position:absolute;inset:35% 0 auto;height:22%;background:linear-gradient(180deg,rgba(255,255,255,.18),transparent);filter:blur(10px)}
+.mountain{position:absolute;left:-8%;bottom:43%;width:116%;height:26%;background:linear-gradient(150deg,#649d6a,#3f7951);clip-path:polygon(0 100%,8% 55%,18% 78%,29% 35%,42% 72%,55% 28%,69% 68%,82% 40%,100% 100%);opacity:.72}
+.rice-field{position:absolute;left:0;right:0;bottom:0;height:37%;background:
+  repeating-linear-gradient(102deg,transparent 0 18px,rgba(55,115,42,.24) 19px 21px),
+  linear-gradient(180deg,#96c65f,#4e993f)}
+.field-shine{position:absolute;left:0;right:0;bottom:24%;height:7%;background:linear-gradient(90deg,transparent,rgba(255,255,210,.28),transparent);animation:fieldGlow 3.2s ease-in-out infinite}
+.pavilion{position:absolute;left:50%;bottom:17%;width:230px;height:155px;transform:translateX(-50%);filter:drop-shadow(0 14px 12px rgba(56,38,18,.24))}
+.pavilion-roof{position:absolute;left:4%;top:0;width:92%;height:55px;background:linear-gradient(180deg,#9a6b37,#5f3d22);clip-path:polygon(5% 100%,15% 18%,50% 0,85% 18%,96% 100%);border-radius:8px}
+.pavilion-floor{position:absolute;left:17%;right:17%;bottom:19px;height:24px;background:linear-gradient(180deg,#c89354,#89572f);border-radius:5px}
+.pavilion-post{position:absolute;top:48px;bottom:30px;width:10px;background:linear-gradient(90deg,#6c4529,#aa7442,#6c4529);border-radius:4px}
+.pavilion-post.p1{left:23%}.pavilion-post.p2{right:23%}
+.watermelon-table{position:absolute;left:50%;bottom:42px;transform:translateX(-50%);width:100px;height:42px}
+.table-top{position:absolute;left:0;right:0;top:0;height:9px;border-radius:50%;background:#9b6438}
+.table-leg{position:absolute;left:46%;top:7px;width:8px;height:31px;background:#6c4328}
+.watermelon{position:absolute;left:27px;top:-29px;width:48px;height:31px;border-radius:50% 50% 45% 45%;background:radial-gradient(ellipse at 50% 58%,#f43e50 0 48%,#f8e9b8 49% 57%,#398a48 58% 100%);clip-path:polygon(0 0,100% 0,50% 100%);filter:drop-shadow(0 4px 3px rgba(0,0,0,.2))}
+.watermelon:after{content:"•••••";position:absolute;left:9px;top:4px;color:#4d1e20;font-size:8px;letter-spacing:1px}
+.summer-person{position:absolute;left:calc(50% + 63px);bottom:59px;font-size:43px;transform-origin:bottom;animation:summerRelax 2.8s ease-in-out infinite}
+.wind-line{position:absolute;height:2px;border-radius:50%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);animation:summerWind 2.4s linear infinite}
+.cicada-note{position:absolute;font-weight:900;color:rgba(36,91,45,.6);animation:cicadaFloat 2s ease-in-out infinite}
+.summer-rain{position:absolute;top:-12vh;width:1.5px;height:30px;background:linear-gradient(transparent,rgba(225,248,255,.9));transform:rotate(8deg);animation:summerShower linear forwards}
+.puddle-ring{position:absolute;border:2px solid rgba(220,248,255,.65);border-radius:50%;animation:puddle 1.4s ease-out infinite}
+.summer-light{position:absolute;right:8%;top:7%;width:92px;height:92px;border-radius:50%;background:radial-gradient(circle,#fffbd9 0 18%,#ffe98a 43%,rgba(255,222,87,.15) 67%,transparent 70%);filter:blur(.2px);animation:sunPulse 3s ease-in-out infinite}
+@keyframes fieldGlow{50%{opacity:.35;transform:translateX(7%)}}
+@keyframes summerRelax{50%{transform:translateY(-3px) rotate(2deg)}}
+@keyframes summerWind{from{transform:translateX(-25vw);opacity:0}20%{opacity:.7}to{transform:translateX(120vw);opacity:0}}
+@keyframes cicadaFloat{50%{transform:translateY(-5px);opacity:.35}}
+@keyframes puddle{from{transform:scale(.2);opacity:.9}to{transform:scale(1.8);opacity:0}}
+
+
+/* V20.3 여름 예약완료 — 장면을 덮지 않고 요소가 우아하게 지나가는 방식 */
+.summer-scene{
+  background:
+    radial-gradient(circle at 50% 35%,rgba(255,255,255,.96),rgba(244,252,255,.93) 42%,rgba(222,244,255,.9) 100%)!important;
+}
+.summer-passing-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.soft-summer-cloud{
+  position:absolute;top:12%;left:-34%;width:190px;height:54px;border-radius:50px;
+  background:rgba(255,255,255,.9);filter:blur(.2px) drop-shadow(0 10px 18px rgba(70,130,170,.11));
+  animation:cloudPass 6s linear forwards;
+}
+.soft-summer-cloud:before,.soft-summer-cloud:after{
+  content:"";position:absolute;border-radius:50%;background:inherit
+}
+.soft-summer-cloud:before{width:78px;height:78px;left:28px;bottom:4px}
+.soft-summer-cloud:after{width:94px;height:94px;right:24px;bottom:2px}
+.soft-summer-cloud.c2{top:25%;transform:scale(.72);animation-delay:.5s;opacity:.72}
+.soft-summer-cloud.c3{top:7%;transform:scale(.48);animation-delay:1.2s;opacity:.5}
+.watermelon-pass{
+  position:absolute;left:-26%;bottom:15%;font-size:74px;
+  filter:drop-shadow(0 12px 10px rgba(88,50,20,.18));
+  animation:watermelonPass 4.8s .35s cubic-bezier(.18,.76,.27,1) forwards;
+}
+.watermelon-slice{
+  position:absolute;left:-18%;bottom:27%;font-size:42px;
+  animation:watermelonSlicePass 4.2s 1.05s ease-in-out forwards;
+}
+.summer-shower{
+  position:absolute;top:-15vh;width:2px;height:26px;border-radius:4px;
+  background:linear-gradient(transparent,rgba(101,179,226,.68));
+  opacity:.72;animation:showerPass linear forwards
+}
+.summer-ripple{
+  position:absolute;border:2px solid rgba(91,174,222,.42);border-radius:50%;
+  animation:rippleBlessing 1.5s ease-out forwards
+}
+.summer-sparkle{
+  position:absolute;width:7px;height:7px;border-radius:50%;background:#fff;
+  box-shadow:0 0 14px rgba(255,255,255,.95);
+  animation:sparkleDrift 2.6s ease-in-out forwards
+}
+.summer-breeze{
+  position:absolute;left:-30%;height:2px;border-radius:50%;
+  background:linear-gradient(90deg,transparent,rgba(92,178,214,.35),transparent);
+  animation:breezePass 3.8s linear forwards
+}
+@keyframes cloudPass{
+  from{transform:translateX(0)}
+  to{transform:translateX(155vw)}
+}
+@keyframes watermelonPass{
+  0%{transform:translateX(0) rotate(-12deg) scale(.86);opacity:0}
+  12%{opacity:1}
+  52%{transform:translateX(67vw) rotate(4deg) scale(1.04)}
+  100%{transform:translateX(145vw) rotate(14deg) scale(.92);opacity:0}
+}
+@keyframes watermelonSlicePass{
+  0%{transform:translateX(0) translateY(12px) rotate(-18deg);opacity:0}
+  18%{opacity:.92}
+  100%{transform:translateX(138vw) translateY(-28px) rotate(22deg);opacity:0}
+}
+@keyframes showerPass{
+  to{transform:translate(-22px,118vh);opacity:0}
+}
+@keyframes rippleBlessing{
+  from{transform:scale(.25);opacity:.8}
+  to{transform:scale(2.25);opacity:0}
+}
+@keyframes sparkleDrift{
+  0%{transform:translateY(12px) scale(.35);opacity:0}
+  45%{opacity:1}
+  100%{transform:translateY(-70px) scale(1.15);opacity:0}
+}
+@keyframes breezePass{
+  from{transform:translateX(0);opacity:0}
+  18%{opacity:.65}
+  to{transform:translateX(160vw);opacity:0}
+}
+.working-now-btn{
+  background:linear-gradient(135deg,#2e9b70,#177451)!important;
+  color:#fff!important;border:0!important;
+  box-shadow:0 8px 20px rgba(30,132,91,.22)!important
+}
+#driverMarker.moving-live{
+  animation:carLivePulse 1.7s ease-in-out infinite;
+}
+@keyframes carLivePulse{
+  50%{transform:translateY(-3px) scale(1.07);filter:drop-shadow(0 7px 8px rgba(0,100,180,.28))}
+}
+
+
+/* V20.4 관리자 상태 버튼 및 문구 정리 */
+.location-actions.three-actions{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+.location-actions.three-actions button{
+  width:100%!important;
+  min-height:48px!important;
+  padding:10px 6px!important;
+  font-size:14px!important;
+  font-weight:900!important;
+  white-space:nowrap!important;
+}
+.admin-status-help{
+  margin-top:9px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:#f5f8fb;
+  color:#506070;
+  font-size:12px;
+  line-height:1.5;
+}
+.working-now-btn{
+  background:linear-gradient(135deg,#2b9b70,#187352)!important;
+  color:#fff!important;
+  border:0!important;
+}
+.map-status-card .status-title{
+  max-width:100%!important;
+  white-space:normal!important;
+  word-break:keep-all!important;
+  overflow:visible!important;
+}
+.map-status-card .status-detail,
+.map-status-card .work-detail{
+  position:relative!important;
+  z-index:2!important;
+  white-space:normal!important;
+  word-break:keep-all!important;
+}
+@media(max-width:430px){
+  .location-actions.three-actions{gap:6px!important}
+  .location-actions.three-actions button{
+    font-size:12px!important;
+    min-height:45px!important;
+    padding:8px 3px!important;
+  }
+  .map-status-card{
+    grid-template-columns:58px minmax(0,1fr)!important;
+    gap:10px!important;
+  }
+  .status-emoji{
+    width:56px!important;height:56px!important;min-width:56px!important;font-size:40px!important
+  }
+  .map-status-card .status-title{
+    font-size:clamp(19px,5.8vw,25px)!important;
+    line-height:1.22!important;
+  }
+}
+
+
+/* V21 상태 알림 시스템 */
+.location-actions.four-actions{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+.location-actions.four-actions button{
+  width:100%!important;
+  min-height:48px!important;
+  padding:9px 3px!important;
+  border-radius:13px!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  white-space:nowrap!important;
+}
+.moving-now-btn{
+  color:#fff!important;
+  border:0!important;
+  background:linear-gradient(135deg,#2699d5,#1576b1)!important;
+  box-shadow:0 8px 18px rgba(30,130,190,.22)!important;
+}
+
+/* 큰 카드는 상태 변화 알림이며 5초 뒤 완전히 사라짐 */
+.map-status-card{
+  display:flex;
+  width:min(88%,570px)!important;
+  min-height:190px;
+  padding:22px 24px!important;
+  gap:18px!important;
+  border-radius:28px!important;
+  background:rgba(255,255,255,.94)!important;
+  border:1px solid rgba(255,255,255,.96)!important;
+  box-shadow:0 24px 60px rgba(35,91,126,.24)!important;
+  backdrop-filter:blur(18px)!important;
+  -webkit-backdrop-filter:blur(18px)!important;
+  transition:opacity .5s ease,transform .5s cubic-bezier(.22,.8,.28,1)!important;
+}
+.map-status-card.announcement-visible{
+  opacity:1;
+  transform:translate(-50%,-46%) scale(1);
+}
+.map-status-card.auto-hidden{
+  opacity:0!important;
+  pointer-events:none!important;
+  transform:translate(-50%,-37%) scale(.96)!important;
+}
+.status-copy{min-width:0!important;flex:1!important}
+.status-kicker{
+  margin-bottom:7px!important;
+  font-size:14px!important;
+  line-height:1.35!important;
+  color:#198fc7!important;
+}
+.map-status-card .status-title{
+  margin:0 0 10px!important;
+  font-size:clamp(27px,5.8vw,38px)!important;
+  line-height:1.14!important;
+  letter-spacing:-.045em!important;
+  white-space:normal!important;
+  word-break:keep-all!important;
+}
+.map-status-card .status-detail{
+  margin:0!important;
+  font-size:clamp(15px,3.7vw,19px)!important;
+  line-height:1.55!important;
+  color:#647181!important;
+}
+.map-status-card .work-detail{
+  margin-top:10px!important;
+  font-size:14px!important;
+  line-height:1.45!important;
+}
+.status-emoji{
+  flex:0 0 86px!important;
+  width:86px!important;
+  height:86px!important;
+  min-width:86px!important;
+  font-size:56px!important;
+}
+
+/* 지도 위 지속 정보는 작고 서로 겹치지 않게 */
+.status-mini-badge{
+  left:14px!important;
+  top:14px!important;
+  max-width:44%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.driver-badge{
+  right:14px!important;
+  top:14px!important;
+  left:auto!important;
+  max-width:49%!important;
+  padding:10px 12px!important;
+}
+.driver-badge small{white-space:normal!important;line-height:1.3!important}
+
+@media(max-width:520px){
+  .location-actions.four-actions{gap:5px!important}
+  .location-actions.four-actions button{
+    min-height:44px!important;
+    font-size:11px!important;
+    padding:8px 1px!important;
+  }
+  .map-status-card{
+    width:91%!important;
+    min-height:174px!important;
+    padding:19px 17px!important;
+    gap:13px!important;
+  }
+  .status-emoji{
+    flex-basis:68px!important;
+    width:68px!important;height:68px!important;min-width:68px!important;
+    font-size:46px!important;
+  }
+  .map-status-card .status-title{
+    font-size:clamp(23px,6.4vw,30px)!important;
+  }
+  .map-status-card .status-detail{
+    font-size:14px!important;
+  }
+  .status-mini-badge{
+    max-width:42%!important;
+    font-size:11px!important;
+    padding:7px 9px!important;
+  }
+  .driver-badge{
+    max-width:51%!important;
+    font-size:12px!important;
+  }
+}
+
+
+/* V23 예약 30분 전 작업 준비중 */
+.map-status-card.status-preparing{
+  background:rgba(255,252,239,.96)!important;
+  border-color:rgba(255,220,120,.8)!important;
+}
+.map-status-card.status-preparing .status-kicker{
+  color:#bf7b00!important;
+}
+.map-status-card.status-preparing .status-title{
+  color:#2f3543!important;
+}
+
+
+/* V24 예약 접수시간: 서울시간 08:00~17:59 */
+#reserveBtn[hidden],
+#bookingClosedNotice[hidden],
+#bookingOpenNote[hidden]{
+  display:none!important;
+}
+.booking-closed-notice{
+  margin-top:13px;
+  display:flex;
+  align-items:center;
+  gap:13px;
+  padding:17px 18px;
+  border-radius:18px;
+  background:linear-gradient(135deg,#f4f6fa,#edf1f7);
+  border:1px solid #dfe5ee;
+  color:#465064;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+}
+.booking-closed-notice .closed-icon{
+  flex:0 0 42px;
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:14px;
+  background:#fff;
+  font-size:25px;
+  box-shadow:0 7px 17px rgba(72,84,108,.10);
+}
+.booking-closed-notice b{
+  display:block;
+  font-size:15px;
+  line-height:1.35;
+}
+.booking-closed-notice span{
+  display:block;
+  margin-top:4px;
+  color:#788196;
+  font-size:13px;
+  line-height:1.45;
+}
+.fields input:disabled{
+  opacity:.48;
+  cursor:not-allowed;
+  background:#f3f5f8;
+}
+
 </style>
 </head>
 <body>
@@ -159,13 +653,24 @@ input,textarea,select{width:100%;padding:13px 14px;border-radius:15px;border:1px
     <div class="status-mini-badge" id="statusMiniBadge">😊 지금 가능</div>
 
     <div class="map-status-card" id="mapStatusCard">
-      <div class="status-emoji smile-face" id="statusEmoji" aria-label="상태 이모티콘">
-        <span class="eye eye-left"></span>
-        <span class="eye eye-right"></span>
-        <span class="cheek cheek-left"></span>
-        <span class="cheek cheek-right"></span>
-        <span class="mouth"></span>
-      </div>
+      <div class="status-emoji smile-face" id="statusEmoji" aria-label="상태 이모티콘"><svg viewBox="0 0 100 100" aria-hidden="true">
+<defs>
+  <radialGradient id="faceGlow" cx="36%" cy="28%" r="72%">
+    <stop offset="0%" stop-color="#fff36b"/>
+    <stop offset="72%" stop-color="#ffd91f"/>
+    <stop offset="100%" stop-color="#f4c900"/>
+  </radialGradient>
+  <filter id="faceShadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="3" stdDeviation="2.2" flood-color="#ad8b00" flood-opacity=".32"/>
+  </filter>
+</defs>
+<circle cx="50" cy="50" r="46" fill="url(#faceGlow)" filter="url(#faceShadow)"/>
+<ellipse cx="34" cy="40" rx="5.7" ry="8.6" fill="#5a3819"/>
+<ellipse cx="66" cy="40" rx="5.7" ry="8.6" fill="#5a3819"/>
+<circle cx="20" cy="59" r="7.5" fill="#ff755f" opacity=".76"/>
+<circle cx="80" cy="59" r="7.5" fill="#ff755f" opacity=".76"/>
+<path d="M31 58 C38 70, 62 70, 69 58" fill="none" stroke="#593315" stroke-width="5.2" stroke-linecap="round"/>
+</svg></div>
       <div class="status-copy">
         <div class="status-kicker" id="statusKicker">예약 가능해요 😊</div>
         <div class="status-title" id="statusTitle">지금 가능</div>
@@ -193,7 +698,14 @@ input,textarea,select{width:100%;padding:13px 14px;border-radius:15px;border:1px
       <input id="endTime" placeholder="예상 종료시간 (예: 오후 3시)">
     </div>
     <button class="reserve" id="reserveBtn">예약하기</button>
-    <div class="note" style="margin-top:8px">시간만 선택해도 예약할 수 있습니다.</div>
+    <div class="booking-closed-notice" id="bookingClosedNotice" hidden>
+      <div class="closed-icon">🌙</div>
+      <div>
+        <b>오늘 예약 접수가 마감되었습니다.</b>
+        <span>예약은 내일 오전 8시부터 가능합니다.</span>
+      </div>
+    </div>
+    <div class="note" id="bookingOpenNote" style="margin-top:8px">시간만 선택해도 예약할 수 있습니다.</div>
   </section>
 
   <section class="card admin" id="adminPanel">
@@ -220,9 +732,13 @@ input,textarea,select{width:100%;padding:13px 14px;border-radius:15px;border:1px
 
     <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
       <div class="section-title">기사님 위치 공유</div>
-      <div class="location-actions">
-        <button class="start" id="startLocation">🟢 출근 · 위치 표시</button>
-        <button class="stop" id="stopLocation">🔴 퇴근 · 위치 삭제</button>
+      <div class="location-actions three-actions">
+        <button class="start" id="startLocation">🟢 출근</button>
+        <button class="working-now-btn" id="workingNow">🛠 작업중</button>
+        <button class="stop" id="stopLocation">🔴 퇴근</button>
+      </div>
+      <div class="admin-status-help">
+        버튼을 누르면 큰 안내가 5초간 표시된 뒤 사라지고, 지도에는 작은 상태만 남습니다.
       </div>
     </div>
 
@@ -232,12 +748,19 @@ input,textarea,select{width:100%;padding:13px 14px;border-radius:15px;border:1px
       <button class="reserve" id="saveAnnouncement">안내 문구 저장</button>
       <button class="top-btn" id="previewAnnouncement" style="width:100%;margin-top:8px">🔊 미리 듣기</button>
     </div>
+
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
+      <button class="top-btn" id="adminLogout" style="width:100%;background:#fff1f3;color:#c54c5e;border-color:#ffd4dc">🔒 관리자 로그아웃</button>
+      <div class="note" style="margin-top:8px;text-align:center">로그아웃하기 전까지 새로고침하거나 앱을 다시 열어도 관리자 로그인이 유지됩니다.</div>
+    </div>
   </section>
 </main>
 
 <div class="toast" id="toast"></div>
 
 <div id="adminLock" style="display:none;position:fixed;inset:0;background:rgba(20,30,45,.45);z-index:4000;align-items:center;justify-content:center;padding:18px">
+
+
   <div style="width:min(380px,100%);background:#fff;border-radius:24px;padding:22px;box-shadow:0 18px 55px rgba(0,0,0,.22)">
     <div class="section-title">관리자 확인</div>
     <div class="note">관리자 비밀번호를 입력해 주세요.</div>
@@ -251,6 +774,7 @@ input,textarea,select{width:100%;padding:13px 14px;border-radius:15px;border:1px
   <div style="width:min(420px,100%);background:#fff;border-radius:24px;padding:22px;box-shadow:0 18px 55px rgba(0,0,0,.22)">
     <div class="section-title">시간별 작업 정보</div>
     <div class="note" id="slotTitle"></div>
+    <div id="slotCustomerInfo" style="display:none;margin-top:12px;padding:13px 14px;border-radius:16px;background:#f5fbff;border:1px solid var(--line);line-height:1.65;font-weight:800"></div>
     <input id="slotArea" placeholder="작업 지역 (예: 공릉동)" style="margin-top:12px">
     <input id="slotJob" placeholder="작업 내용 (예: 에어컨 가스 주입)" style="margin-top:9px">
     <input id="slotEnd" placeholder="예상 종료시간 (예: 오후 3시)" style="margin-top:9px">
@@ -260,18 +784,35 @@ input,textarea,select{width:100%;padding:13px 14px;border-radius:15px;border:1px
   </div>
 </div>
 
+
+<div id="cancelBookingModal" style="display:none;position:fixed;inset:0;background:rgba(20,30,45,.48);z-index:4200;align-items:center;justify-content:center;padding:18px">
+  <div style="width:min(410px,100%);background:#fff;border-radius:24px;padding:22px;box-shadow:0 18px 55px rgba(0,0,0,.22)">
+    <div class="section-title">예약 취소</div>
+    <div class="note" id="cancelBookingTitle"></div>
+    <input id="cancelPhone" inputmode="tel" placeholder="예약할 때 입력한 전화번호" style="margin-top:13px">
+    <button id="confirmCancelBooking" class="reserve">예약 취소하기</button>
+    <button id="closeCancelBooking" class="top-btn" style="width:100%;margin-top:8px">닫기</button>
+  </div>
+</div>
+
+<div class="celebration" id="celebration">
+  <div id="seasonLayer"></div>
+  <div class="celebrate-card">
+    <div class="celebrate-title">예약이 완료되었습니다 🎉</div>
+    <div class="celebrate-sub" id="celebrateMessage">감사합니다. 안전하게 찾아뵙겠습니다.</div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const ADMIN_PIN='1011';
 const TAE={lat:37.61769,lng:127.07567};
 const GONGNEUNG={lat:37.6256,lng:127.0731,radius:2200};
 const TIMES=[];
-for(let h=8;h<=22;h++){
-  TIMES.push(String(h).padStart(2,'0')+':00');
-  if(h<22) TIMES.push(String(h).padStart(2,'0')+':30');
-}
+for(let h=8;h<=18;h++) TIMES.push(String(h).padStart(2,'0')+':00');
 const STORE='biumchaeum-v19';
 const DEFAULT_ANNOUNCEMENT='안녕하세요 김재성입니다. 문의전화 010-3019-1011. 오늘도 안전한 하루 보내세요 💙';
+const ADMIN_SESSION_KEY='biumchaeum-admin-unlocked-v25';
 
 let data;
 try{data=JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){data={}}
@@ -281,7 +822,7 @@ data.manual ||= {mode:'auto',area:'',job:'',end:'',message:''};
 
 let selectedDate=dateKey(new Date());
 let selected=new Set();
-let adminUnlocked=false;
+let adminUnlocked=localStorage.getItem(ADMIN_SESSION_KEY)==='true';
 let editingSlot=null;
 let watchId=null;
 let marker=null;
@@ -310,6 +851,171 @@ function clickSound(){
     o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.12);
   }catch(e){}
 }
+
+const GREETINGS=[
+  '감사합니다.',
+  '고맙습니다.',
+  '좋은 하루 보내세요.',
+  '행복한 하루 보내세요.',
+  '소중한 예약 감사합니다.',
+  '예약해 주셔서 감사합니다.',
+  '안전하게 찾아뵙겠습니다.',
+  '오늘도 웃는 하루 보내세요.'
+];
+let cancelTargetTime=null;
+
+function randomGreeting(){
+  return GREETINGS[Math.floor(Math.random()*GREETINGS.length)];
+}
+function normalizedPhone(v){return String(v||'').replace(/\D/g,'')}
+function escapeHtml(v){
+  return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+}
+function isPastSlot(date,time){
+  if(date!==dateKey(new Date()))return false;
+  const now=new Date();
+  const [h,m]=time.split(':').map(Number);
+  return now.getHours()*60+now.getMinutes() >= h*60+m;
+}
+function playSuccessChime(){
+  try{
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    const ctx=new AudioCtx();
+    const master=ctx.createGain();master.gain.value=.055;master.connect(ctx.destination);
+    [523.25,659.25,783.99].forEach((freq,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type='sine';o.frequency.value=freq;
+      const start=ctx.currentTime+i*.12;
+      g.gain.setValueAtTime(.001,start);
+      g.gain.exponentialRampToValueAtTime(.7,start+.025);
+      g.gain.exponentialRampToValueAtTime(.001,start+.38);
+      o.connect(g);g.connect(master);o.start(start);o.stop(start+.42);
+    });
+    setTimeout(()=>ctx.close().catch(()=>{}),1100);
+  }catch(e){}
+}
+function makeParticle(layer,symbol,count,kind){
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='season-particle rich';
+    p.textContent=symbol;
+    p.style.left=Math.random()*100+'vw';
+    p.style.top=(-8-Math.random()*25)+'vh';
+    p.style.fontSize=(16+Math.random()*24)+'px';
+    p.style.setProperty('--drift',(Math.random()*240-120)+'px');
+    p.style.opacity=.55+Math.random()*.45;
+    const animation=kind==='leaf'?'leafFall':kind==='snow'?'snowFall':'petalFall';
+    p.style.animation=`${animation} ${2.8+Math.random()*3.2}s ${Math.random()*.9}s linear forwards`;
+    layer.appendChild(p);
+  }
+}
+function playSeasonSound(season){
+  try{
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    const ctx=new AudioCtx(),master=ctx.createGain();
+    master.gain.value=.055;master.connect(ctx.destination);
+    const noise=ctx.createBuffer(1,ctx.sampleRate*4,ctx.sampleRate);
+    const d=noise.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    const source=ctx.createBufferSource();source.buffer=noise;
+    const filter=ctx.createBiquadFilter();
+    filter.type='lowpass';
+    filter.frequency.value=season==='summer'?650:season==='winter'?1300:900;
+    const gain=ctx.createGain();
+    gain.gain.setValueAtTime(.001,ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(season==='summer'?.22:.11,ctx.currentTime+.35);
+    gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+3.5);
+    source.connect(filter);filter.connect(gain);gain.connect(master);
+    source.start();source.stop(ctx.currentTime+3.7);
+    if(season==='summer'){
+      [0,.9,1.8].forEach(delay=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.type='sine';o.frequency.setValueAtTime(170,ctx.currentTime+delay);
+        o.frequency.exponentialRampToValueAtTime(80,ctx.currentTime+delay+.65);
+        g.gain.setValueAtTime(.001,ctx.currentTime+delay);
+        g.gain.linearRampToValueAtTime(.13,ctx.currentTime+delay+.14);
+        g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+delay+.8);
+        o.connect(g);g.connect(master);o.start(ctx.currentTime+delay);o.stop(ctx.currentTime+delay+.85);
+      });
+    }
+    setTimeout(()=>ctx.close().catch(()=>{}),4500);
+  }catch(e){}
+}
+function showSeasonCelebration(message){
+  const wrap=document.getElementById('celebration');
+  const old=document.getElementById('seasonLayer');
+  old.innerHTML='';
+  old.className='season-scene';
+  document.getElementById('celebrateMessage').textContent=message;
+  const month=new Date().getMonth()+1;
+  const season=month>=3&&month<=5?'spring':month>=6&&month<=8?'summer':month>=9&&month<=11?'autumn':'winter';
+  old.classList.add(season+'-scene');
+
+  if(season==='summer'){
+    old.innerHTML=`
+      <div class="summer-passing-layer">
+        <div class="soft-summer-cloud"></div>
+        <div class="soft-summer-cloud c2"></div>
+        <div class="soft-summer-cloud c3"></div>
+        <div class="watermelon-pass">🍉</div>
+        <div class="watermelon-slice">🍉</div>
+        <div class="summer-breeze" style="top:31%;width:210px"></div>
+        <div class="summer-breeze" style="top:42%;width:150px;animation-delay:.8s"></div>
+      </div>
+      <div class="season-vignette"></div>`;
+    for(let i=0;i<54;i++){
+      const r=document.createElement('i');
+      r.className='summer-shower';
+      r.style.left=Math.random()*100+'vw';
+      r.style.animationDuration=(.72+Math.random()*.72)+'s';
+      r.style.animationDelay=(.85+Math.random()*1.55)+'s';
+      old.appendChild(r);
+    }
+    for(let i=0;i<12;i++){
+      const p=document.createElement('i');
+      p.className='summer-ripple';
+      p.style.left=(6+Math.random()*88)+'%';
+      p.style.bottom=(5+Math.random()*23)+'%';
+      p.style.width=(18+Math.random()*26)+'px';
+      p.style.height=(6+Math.random()*9)+'px';
+      p.style.animationDelay=(1.05+Math.random()*1.7)+'s';
+      old.appendChild(p);
+    }
+    for(let i=0;i<14;i++){
+      const s=document.createElement('i');
+      s.className='summer-sparkle';
+      s.style.left=(8+Math.random()*84)+'%';
+      s.style.top=(18+Math.random()*62)+'%';
+      s.style.animationDelay=(.4+Math.random()*2)+'s';
+      old.appendChild(s);
+    }
+  }else if(season==='spring'){
+    old.innerHTML='<div class="scene-sun"></div><div class="scene-cloud c1"></div><div class="season-tree">🌸</div><div class="season-ground"></div><div class="season-vignette"></div>';
+    makeParticle(old,'🌸',38,'petal');
+    for(let i=0;i<10;i++){
+      const f=document.createElement('i');f.className='firefly';
+      f.style.left=10+Math.random()*80+'%';f.style.top=20+Math.random()*55+'%';
+      f.style.setProperty('--fx',(Math.random()*55-27)+'px');f.style.setProperty('--fy',(Math.random()*50-25)+'px');
+      f.style.animationDelay=Math.random()*1.5+'s';old.appendChild(f);
+    }
+  }else if(season==='autumn'){
+    old.innerHTML='<div class="scene-sun"></div><div class="season-tree">🍁</div><div class="season-ground"></div><div class="season-vignette"></div>';
+    makeParticle(old,Math.random()>.5?'🍁':'🍂',42,'leaf');
+  }else{
+    old.innerHTML='<div class="scene-cloud c1"></div><div class="winter-cabin">🏡</div><div class="season-tree">🎄</div><div class="season-ground"></div><div class="season-vignette"></div>';
+    makeParticle(old,'❄️',48,'snow');
+  }
+  wrap.classList.add('show');
+  playSeasonSound(season);
+  setTimeout(()=>wrap.classList.remove('show'),5000);
+}
+function openCustomerCancel(time){
+  cancelTargetTime=time;
+  document.getElementById('cancelBookingTitle').textContent=`${selectedDate} · ${time}`;
+  document.getElementById('cancelPhone').value='';
+  document.getElementById('cancelBookingModal').style.display='flex';
+}
+
 function distance(a,b,c,d){
   const R=6371000,p=Math.PI/180;
   const x=(c-a)*p,y=(d-b)*p;
@@ -343,11 +1049,12 @@ function startLocation(){
   // 즉시 태릉입구역 5번 출구 기준 아이콘을 표시하고, GPS가 잡히면 실제/보호 위치로 갱신
   showLocation(TAE.lat,TAE.lng);
   document.getElementById('driverBadge').style.display='block';
-  data.manual={mode:'moving',area:data.manual.area||'',job:data.manual.job||'',end:data.manual.end||'',message:data.manual.message||''};
-  save();refreshStatus();
+  data.manual={mode:'available',area:'',job:'',end:'',message:'오늘 남은 시간 예약 가능합니다.'};
+  save();refreshStatus(true);
+  if(navigator.vibrate) navigator.vibrate(40);
   if(!navigator.geolocation){
     toast('지도에 운행 아이콘을 표시했습니다');
-    speak('김재성 기사가 운행을 시작했습니다.');
+    speak('출근했습니다. 지금 예약 가능합니다.');
     return;
   }
   if(watchId!==null)navigator.geolocation.clearWatch(watchId);
@@ -359,7 +1066,7 @@ function startLocation(){
     {enableHighAccuracy:true,maximumAge:2000,timeout:15000}
   );
   toast('운행을 시작했습니다');
-  speak('김재성 기사가 운행을 시작했습니다.');
+  speak('출근했습니다. 지금 예약 가능합니다.');
 }
 function stopLocation(){
   if(!adminUnlocked){toast('관리자만 사용할 수 있습니다');return}
@@ -367,8 +1074,9 @@ function stopLocation(){
   if(marker){map.removeLayer(marker);marker=null}
   document.getElementById('driverBadge').style.display='none';
   map.setView([TAE.lat,TAE.lng],15);
-  data.manual={mode:'off',area:'',job:'',end:'',message:'예약은 계속 가능합니다.'};
-  save();refreshStatus();
+  data.manual={mode:'off',area:'',job:'',end:'',message:'운행은 종료했지만 예약은 계속 가능합니다.'};
+  save();refreshStatus(true);
+  if(navigator.vibrate) navigator.vibrate([65,40,65]);
   toast('운행을 종료하고 위치 아이콘을 삭제했습니다');
   speak('오늘 운행이 종료되었습니다. 예약은 계속 가능합니다.');
 }
@@ -391,19 +1099,41 @@ function renderTimes(){
   const box=document.getElementById('times');box.innerHTML='';
   const d=day();
   TIMES.forEach(t=>{
-    const item=d[t]||{},busy=!!item.busy;
+    const item=d[t]||{},busy=!!item.busy,past=isPastSlot(selectedDate,t);
     const b=document.createElement('button');
-    b.className='time'+(busy?' busy':selected.has(t)?' sel':'');
+    b.className='time'+(busy?' busy':selected.has(t)?' sel':'')+(past&&!busy?' past':'');
     const meta=[item.area,item.job].filter(Boolean);
-    b.innerHTML=`<span class="time-main">${busy?(item.completed?t+' 완료':t+' 마감'):t}</span>${meta.length?`<span class="time-meta">${meta.join('<br>')}</span>`:''}`;
-    b.disabled=busy;
-    b.onclick=()=>{selected.has(t)?selected.delete(t):selected.add(t);clickSound();speak('감사합니다');renderTimes()};
+    if(past&&!busy){
+      b.innerHTML=`<span class="time-main">${t}</span><span class="time-meta">시간 지남</span>`;
+      b.onclick=()=>toast('이미 지난 시간입니다');
+    }else if(busy){
+      b.innerHTML=`<span class="time-main">${item.completed?t+' 완료':t+' 마감'}</span>${meta.length?`<span class="time-meta">${meta.join('<br>')}</span>`:''}<span class="cancel-hint">눌러서 예약 취소</span>`;
+      b.onclick=()=>openCustomerCancel(t);
+    }else{
+      b.innerHTML=`<span class="time-main">${t}</span>`;
+      b.onclick=()=>{
+        selected.has(t)?selected.delete(t):(selected.clear(),selected.add(t));
+        clickSound();speak(randomGreeting());renderTimes()
+      };
+    }
     box.appendChild(b);
   });
 }
 function openSlotEditor(t){
   editingSlot=t;const item=day()[t]||{};
   document.getElementById('slotTitle').textContent=`${selectedDate} · ${t}`;
+  const customer=document.getElementById('slotCustomerInfo');
+  if(item.busy){
+    customer.style.display='block';
+    customer.innerHTML=[
+      `<div>👤 고객명: ${escapeHtml(item.name||'미입력')}</div>`,
+      `<div>📞 전화번호: ${escapeHtml(item.phone||'미입력')}</div>`,
+      `<div>🕒 예약시간: ${escapeHtml(selectedDate+' '+t)}</div>`
+    ].join('');
+  }else{
+    customer.style.display='none';
+    customer.innerHTML='';
+  }
   document.getElementById('slotArea').value=item.area||'';
   document.getElementById('slotJob').value=item.job||'';
   document.getElementById('slotEnd').value=item.endTime||'';
@@ -431,7 +1161,7 @@ function currentReservation(){
   for(const t of TIMES){
     const [h,m]=t.split(':').map(Number);
     const start=h*60+m;
-    if(mins>=start && mins<start+30){
+    if(mins>=start && mins<start+60){
       const slot=todaySchedule[t];
       if(slot && slot.busy && !slot.completed){
         return {
@@ -447,32 +1177,84 @@ function currentReservation(){
     }
   }
 
-  // 예전 저장 방식의 예약 배열도 보조로 확인합니다.
+  // 예전 예약 배열은 실제 일정표에 busy 시간칸이 남아 있을 때만 인정합니다.
+  // 취소된 배열 데이터 때문에 작업중이 다시 살아나는 현상을 막습니다.
   return data.reservations.find(r=>{
     if(r.date!==today)return false;
     return (r.times||[]).some(t=>{
+      const slot=todaySchedule[t];
+      if(!slot || !slot.busy || slot.completed) return false;
       const [h,m]=t.split(':').map(Number);
       const start=h*60+m;
-      return mins>=start && mins<start+30;
+      return mins>=start && mins<start+60;
     });
   })||null;
 }
-function showStatusCard(signature){
-  const card=document.getElementById('mapStatusCard');
-  const mini=document.getElementById('statusMiniBadge');
-  if(signature!==lastStatusSignature){
-    lastStatusSignature=signature;
-    card.classList.remove('auto-hidden');
-    mini.classList.remove('show');
-    clearTimeout(statusHideTimer);
-    statusHideTimer=setTimeout(()=>{
-      card.classList.add('auto-hidden');
-      mini.classList.add('show');
-    },5000);
+
+function upcomingReservationWithin(minutesAhead=30){
+  const now=new Date();
+  const today=dateKey(now);
+  const nowMinutes=now.getHours()*60+now.getMinutes();
+  const schedule=data.schedule[today]||{};
+  let found=null;
+
+  for(const t of TIMES){
+    const slot=schedule[t];
+    if(!slot || !slot.busy || slot.completed || slot.name==='관리자 현재 작업') continue;
+
+    const [h,m]=t.split(':').map(Number);
+    const start=h*60+m;
+    const remain=start-nowMinutes;
+
+    if(remain>0 && remain<=minutesAhead){
+      if(!found || remain<found.minutesLeft){
+        found={
+          date:today,
+          time:t,
+          minutesLeft:remain,
+          area:slot.area||'',
+          job:slot.job||'',
+          name:slot.name||'',
+          endTime:slot.endTime||''
+        };
+      }
+    }
   }
+  return found;
 }
 
-function setStatus(mode,info={}){
+function showStatusCard(signature,force=false){
+  const card=document.getElementById('mapStatusCard');
+  const mini=document.getElementById('statusMiniBadge');
+  const changed=signature!==lastStatusSignature;
+
+  if(!changed && !force) return;
+  lastStatusSignature=signature;
+
+  clearTimeout(statusHideTimer);
+  clearTimeout(window.statusDisplayNoneTimer);
+
+  card.style.display='flex';
+  card.classList.remove('auto-hidden');
+  card.classList.add('announcement-visible');
+  mini.classList.remove('show');
+
+  requestAnimationFrame(()=>{
+    card.classList.remove('announcement-enter');
+  });
+
+  statusHideTimer=setTimeout(()=>{
+    card.classList.add('auto-hidden');
+    card.classList.remove('announcement-visible');
+    mini.classList.add('show');
+
+    window.statusDisplayNoneTimer=setTimeout(()=>{
+      if(card.classList.contains('auto-hidden')) card.style.display='none';
+    },520);
+  },5000);
+}
+
+function setStatus(mode,info={},forceAnnouncement=false){
   const emoji=document.getElementById('statusEmoji');
   const kicker=document.getElementById('statusKicker');
   const title=document.getElementById('statusTitle');
@@ -480,7 +1262,9 @@ function setStatus(mode,info={}){
   const work=document.getElementById('workDetail');
   const card=document.getElementById('mapStatusCard');
 
-  card.className='map-status-card';
+  // 상태 갱신 때 auto-hidden을 지우지 않습니다.
+  // 이전 버전은 5초마다 이 클래스를 초기화해 큰 카드가 계속 보였습니다.
+  card.classList.remove('status-working','status-moving','status-off','status-available','status-preparing');
 
   const setVehicle=(symbol)=>{
     emoji.className='status-emoji vehicle-face';
@@ -489,17 +1273,46 @@ function setStatus(mode,info={}){
 
   const setSmile=()=>{
     emoji.className='status-emoji smile-face';
-    emoji.innerHTML='<span class="eye eye-left"></span><span class="eye eye-right"></span><span class="cheek cheek-left"></span><span class="cheek cheek-right"></span><span class="mouth"></span>';
+    emoji.innerHTML=`<svg viewBox="0 0 100 100" aria-hidden="true">
+<defs>
+  <radialGradient id="faceGlow" cx="36%" cy="28%" r="72%">
+    <stop offset="0%" stop-color="#fff36b"/>
+    <stop offset="72%" stop-color="#ffd91f"/>
+    <stop offset="100%" stop-color="#f4c900"/>
+  </radialGradient>
+  <filter id="faceShadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="3" stdDeviation="2.2" flood-color="#ad8b00" flood-opacity=".32"/>
+  </filter>
+</defs>
+<circle cx="50" cy="50" r="46" fill="url(#faceGlow)" filter="url(#faceShadow)"/>
+<ellipse cx="34" cy="40" rx="5.7" ry="8.6" fill="#5a3819"/>
+<ellipse cx="66" cy="40" rx="5.7" ry="8.6" fill="#5a3819"/>
+<circle cx="20" cy="59" r="7.5" fill="#ff755f" opacity=".76"/>
+<circle cx="80" cy="59" r="7.5" fill="#ff755f" opacity=".76"/>
+<path d="M31 58 C38 70, 62 70, 69 58" fill="none" stroke="#593315" stroke-width="5.2" stroke-linecap="round"/>
+</svg>`;
   };
 
-  if(mode==='working'){
-    card.classList.add('status-working');
-    setVehicle('🚜');
-    kicker.textContent='현재 작업 중입니다';
-    title.textContent='지금 작업중';
-    detail.textContent=info.message||'현재 작업을 진행하고 있습니다.';
+  if(mode==='preparing'){
+    card.classList.add('status-preparing');
+    setVehicle('🧰');
+    kicker.textContent='곧 예약 작업이 시작됩니다';
+    title.textContent='작업 준비중입니다';
+    detail.textContent=info.message||'예약 작업을 준비하고 있습니다.';
     const parts=[
-      info.area?`📍 ${info.area}`:'',
+      info.time?`⏰ 예약 ${info.time}`:'',
+      info.minutesLeft?`약 ${info.minutesLeft}분 전`:'',
+      info.job?`🛠 ${info.job}`:''
+    ].filter(Boolean);
+    work.textContent=parts.join('  ·  ');
+    work.style.display=parts.length?'block':'none';
+  }else if(mode==='working'){
+    card.classList.add('status-working');
+    setVehicle('🛠');
+    kicker.textContent='현재 작업 상태';
+    title.textContent='지금 작업중입니다';
+    detail.textContent=info.message||'김재성 기사님이 현재 위치에서 작업 중입니다.';
+    const parts=[
       info.job?`🛠 ${info.job}`:'',
       info.end?`⏰ 예상 종료 ${info.end}`:''
     ].filter(Boolean);
@@ -508,63 +1321,186 @@ function setStatus(mode,info={}){
   }else if(mode==='moving'){
     card.classList.add('status-moving');
     setVehicle('🚙');
-    kicker.textContent='운행 중이에요';
-    title.textContent=info.area||'이동 중';
-    detail.textContent=info.job||info.message||'안전하게 이동하고 있습니다.';
+    kicker.textContent='실시간 위치 공유 중';
+    title.textContent='지금 이동중입니다';
+    detail.textContent=info.message||'김재성 기사님이 안전하게 이동 중입니다.';
     const parts=[info.end?`⏰ 예상 종료 ${info.end}`:''].filter(Boolean);
     work.textContent=parts.join('  ·  ');
     work.style.display=parts.length?'block':'none';
   }else if(mode==='off'){
     card.classList.add('status-off');
     setSmile();
-    kicker.textContent='오늘 운행 종료';
-    title.textContent='예약 가능';
-    detail.textContent=info.message||'예약은 계속 가능합니다.';
+    kicker.textContent='오늘 운행을 마쳤습니다';
+    title.textContent='지금 퇴근했습니다';
+    detail.textContent=info.message||'운행은 종료했지만 예약은 계속 가능합니다.';
     work.style.display='none';
   }else{
     card.classList.add('status-available');
     setSmile();
-    kicker.textContent='예약 가능해요 😊';
-    title.textContent='지금 가능';
-    detail.textContent=info.message||'오늘 남은 시간 예약 가능';
+    kicker.textContent='예약 가능해요';
+    title.textContent='지금 예약 가능합니다';
+    detail.textContent=info.message||'오늘 남은 시간 예약 가능합니다.';
     work.style.display='none';
   }
 
   const mini=document.getElementById('statusMiniBadge');
-  const miniText=mode==='working'?'🚜 작업중':mode==='moving'?'🚙 이동 중':mode==='off'?'🌙 운행 종료':'😊 지금 가능';
+  const miniText=mode==='working'?'🛠 작업중':mode==='preparing'?'🧰 작업 준비중':mode==='moving'?'🚙 이동 중':mode==='off'?'🌙 운행 종료':'😊 지금 가능';
   mini.textContent=miniText+(info.area?` · ${info.area}`:'');
-  showStatusCard(JSON.stringify([mode,info.area||'',info.job||'',info.end||'',info.message||'']));
+
+  const driverBadge=document.getElementById('driverBadge');
+  const driverMarker=document.getElementById('driverMarker');
+  if(driverBadge){
+    if(mode==='moving'){
+      driverBadge.style.display='block';
+      driverBadge.innerHTML='🚙 김재성 기사님 실시간 위치<small>● 현재 이동 중 · 위치 자동 갱신</small>';
+      if(driverMarker){
+        driverMarker.style.display='grid';
+        driverMarker.textContent='🚙';
+        driverMarker.classList.add('moving-live');
+      }
+    }else if(mode==='working'){
+      driverBadge.style.display='block';
+      driverBadge.innerHTML='🛠 김재성 기사님<small>● 현재 작업 중</small>';
+      if(driverMarker){
+        driverMarker.style.display='grid';
+        driverMarker.textContent='🛠';
+        driverMarker.classList.remove('moving-live');
+      }
+    }else{
+      driverBadge.style.display=data.location?.active?'block':'none';
+      if(data.location?.active) driverBadge.innerHTML='🚙 김재성 기사님 위치<small>● 예약 대기 중입니다</small>';
+      if(driverMarker){
+        driverMarker.style.display=data.location?.active?'grid':'none';
+        driverMarker.textContent='🚙';
+        driverMarker.classList.remove('moving-live');
+      }
+    }
+  }
+  showStatusCard(
+    JSON.stringify([mode,info.area||'',info.job||'',info.end||'',info.message||'']),
+    forceAnnouncement
+  );
 }
-function refreshStatus(){
+
+
+function setWorkingNow(){
+  if(!adminUnlocked){toast('관리자만 사용할 수 있습니다');return}
+
+  const applyWorking=()=>{
+    data.manual={
+      mode:'working',
+      area:'',
+      job:'',
+      end:'',
+      message:'김재성 기사님이 현재 위치에서 작업 중입니다.'
+    };
+    save();
+    refreshStatus(true);
+    if(navigator.vibrate) navigator.vibrate(55);
+    toast('현재 위치에서 작업중으로 표시했습니다');
+    speak('현재 위치에서 작업중입니다.');
+  };
+
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        data.location={
+          active:true,
+          lat:pos.coords.latitude,
+          lng:pos.coords.longitude,
+          accuracy:pos.coords.accuracy||0,
+          updatedAt:Date.now()
+        };
+        save();
+        showLocation(pos.coords.latitude,pos.coords.longitude);
+        applyWorking();
+      },
+      ()=>applyWorking(),
+      {enableHighAccuracy:true,timeout:12000,maximumAge:5000}
+    );
+  }else{
+    applyWorking();
+  }
+}
+
+function refreshStatus(forceAnnouncement=false){
   const m=data.manual||{};
+  let mode='available';
+  let info={message:'오늘 남은 시간 예약 가능합니다.'};
 
-  // 관리자가 '지금 가능' 또는 '운행 종료'로 직접 바꾸면 자동 예약판정보다 우선합니다.
-  if(m.mode==='available'){
-    setStatus('available',{message:m.message});
-    return;
-  }
-  if(m.mode==='off'){
-    setStatus('off',{message:m.message});
-    return;
-  }
+  // 1. 실제 예약 시간이 시작되면 자동 작업중
+  let r=currentReservation();
+  if(r && r.name==='관리자 현재 작업') r=null;
 
-  // 현재 시간이 예약/마감 시간이고 완료 처리되지 않았다면 작업중으로 표시합니다.
-  const r=currentReservation();
+  // 2. 예약 시작 30분 전이면 작업 준비중
+  const upcoming=upcomingReservationWithin(30);
+
   if(r){
-    setStatus('working',{
-      area:r.area,
+    mode='working';
+    info={
+      area:r.area||'',
       job:r.job||'예약 작업 진행 중',
-      end:r.endTime
-    });
-    return;
+      end:r.endTime||'',
+      message:'김재성 기사님이 예약된 작업을 진행 중입니다.'
+    };
+  }else if(m.mode==='working'){
+    // 관리자가 직접 누른 작업중은 예약 취소와 별개의 수동 상태입니다.
+    mode='working';
+    info={
+      area:m.area||'',
+      job:m.job||'',
+      end:m.end||'',
+      message:m.message||'김재성 기사님이 현재 위치에서 작업 중입니다.'
+    };
+  }else if(m.mode==='off'){
+    mode='off';
+    info={message:m.message||'운행은 종료했지만 예약은 계속 가능합니다.'};
+  }else if(upcoming){
+    mode='preparing';
+    info={
+      area:upcoming.area||'',
+      job:upcoming.job||'예약 작업',
+      time:upcoming.time,
+      minutesLeft:upcoming.minutesLeft,
+      message:`${upcoming.time} 예약 작업을 준비하고 있습니다.`
+    };
+  }else{
+    mode='available';
+    info={message:'오늘 남은 시간 예약 가능합니다.'};
   }
 
-  if(m.mode&&m.mode!=='auto'){
-    setStatus(m.mode,{area:m.area,job:m.job,end:m.end,message:m.message});
-    return;
-  }
+  setStatus(mode,info,forceAnnouncement);
+}
 
-  setStatus('available');
+
+function getSeoulHour(){
+  const parts=new Intl.DateTimeFormat('en-US',{
+    timeZone:'Asia/Seoul',
+    hour:'2-digit',
+    hourCycle:'h23'
+  }).formatToParts(new Date());
+  return Number(parts.find(p=>p.type==='hour')?.value||0);
+}
+
+function isBookingOpenNow(){
+  const hour=getSeoulHour();
+  return hour>=8 && hour<18;
+}
+
+function updateBookingHours(){
+  const open=isBookingOpenNow();
+  const reserveBtn=document.getElementById('reserveBtn');
+  const closedNotice=document.getElementById('bookingClosedNotice');
+  const openNote=document.getElementById('bookingOpenNote');
+
+  if(reserveBtn) reserveBtn.hidden=!open;
+  if(closedNotice) closedNotice.hidden=open;
+  if(openNote) openNote.hidden=!open;
+
+  // 영업 종료 시간에는 입력창도 흐리게 표시해 예약 가능한 것으로 오해하지 않게 합니다.
+  document.querySelectorAll('.fields input').forEach(input=>{
+    input.disabled=!open;
+  });
 }
 
 function updateSeoulClock(){
@@ -581,8 +1517,14 @@ function updateSeoulClock(){
 function renderAll(){renderDates();renderTimes();renderAdmin();refreshStatus()}
 
 document.getElementById('reserveBtn').onclick=()=>{
+  if(!isBookingOpenNow()){
+    updateBookingHours();
+    toast('오늘 예약 접수가 마감되었습니다. 내일 오전 8시부터 예약할 수 있습니다.');
+    return;
+  }
   const times=[...selected].sort();
   if(!times.length){toast('예약 시간을 먼저 선택해 주세요');return}
+  if(times.some(t=>isPastSlot(selectedDate,t))){toast('이미 지난 시간은 예약할 수 없습니다');selected.clear();renderTimes();return}
   const d=day();
   if(times.some(t=>d[t]?.busy)){toast('이미 마감된 시간이 포함되어 있습니다');renderAll();return}
   const rec={
@@ -596,7 +1538,15 @@ document.getElementById('reserveBtn').onclick=()=>{
   };
   data.reservations.push(rec);
   times.forEach(t=>d[t]={busy:true,completed:false,...rec});
-  save();selected.clear();renderAll();toast('예약되었습니다. 감사합니다');speak('예약되었습니다');
+  save();selected.clear();renderAll();
+  const monthNow=new Date().getMonth()+1;
+  const phrase=(monthNow>=6&&monthNow<=8)
+    ? ['시원한 바람과 달콤한 수박처럼 행복한 하루 되세요.','여름 소나기 뒤 맑은 하늘처럼 좋은 일이 가득하시길 바랍니다.','푸른 들판의 바람처럼 편안한 하루 보내세요.'][Math.floor(Math.random()*3)]
+    : randomGreeting();
+  toast('예약되었습니다. 감사합니다');
+  playSuccessChime();
+  showSeasonCelebration(phrase+' 안전하게 찾아뵙겠습니다.');
+  setTimeout(()=>speak('예약이 완료되었습니다. '+phrase+' 안전하게 찾아뵙겠습니다.'),180);
 };
 
 document.getElementById('saveSlot').onclick=()=>{
@@ -607,27 +1557,109 @@ document.getElementById('saveSlot').onclick=()=>{
 };
 document.getElementById('openSlot').onclick=()=>{
   if(!adminUnlocked||!editingSlot){toast('관리자만 사용할 수 있습니다');return}
-  delete day()[editingSlot];save();document.getElementById('slotEditor').style.display='none';renderAll();toast('예약 가능 시간으로 변경했습니다');
+  const removed=day()[editingSlot];
+  delete day()[editingSlot];
+  if(removed?.id){
+    const remaining=Object.values(day()).some(s=>s?.busy&&s.id===removed.id);
+    if(!remaining) data.reservations=data.reservations.filter(r=>r.id!==removed.id);
+  }
+  save();document.getElementById('slotEditor').style.display='none';
+  renderDates();renderTimes();renderAdmin();refreshStatus(true);
+  toast('예약 가능 시간으로 변경했습니다');
 };
 document.getElementById('cancelSlot').onclick=()=>document.getElementById('slotEditor').style.display='none';
 
-document.getElementById('adminToggle').onclick=()=>{
-  if(adminUnlocked){
-    adminUnlocked=false;document.getElementById('adminPanel').classList.remove('show');
-    document.getElementById('adminToggle').textContent='🔒 관리자';return;
+
+document.getElementById('closeCancelBooking').onclick=()=>document.getElementById('cancelBookingModal').style.display='none';
+document.getElementById('confirmCancelBooking').onclick=()=>{
+  if(!cancelTargetTime)return;
+  const item=day()[cancelTargetTime];
+  if(!item||!item.busy){toast('이미 취소된 예약입니다');document.getElementById('cancelBookingModal').style.display='none';renderAll();return}
+  const entered=normalizedPhone(document.getElementById('cancelPhone').value);
+  const saved=normalizedPhone(item.phone);
+  if(!saved){
+    toast('전화번호가 없는 예약은 관리자에게 취소를 요청해 주세요');return
   }
-  document.getElementById('adminLock').style.display='flex';document.getElementById('adminPin').focus();
+  if(!entered||entered!==saved){toast('예약할 때 입력한 전화번호가 맞지 않습니다');return}
+  // 같은 예약에 포함된 모든 시간칸을 한 번에 취소합니다.
+  // 한 칸만 지우면 나머지 시간칸 때문에 작업중 상태가 계속 유지될 수 있습니다.
+  const bookingTimes=(item.times&&item.times.length)?item.times:[cancelTargetTime];
+  bookingTimes.forEach(t=>{
+    const slot=day()[t];
+    if(slot && (slot.id===item.id || bookingTimes.includes(t))) delete day()[t];
+  });
+  data.reservations=data.reservations.filter(r=>r.id!==item.id);
+
+  // 예약 취소 후 상태를 다시 계산합니다.
+  // 예약으로 생긴 작업중/준비중은 즉시 사라집니다.
+  // 관리자가 직접 누른 작업중과 퇴근 상태는 그대로 유지합니다.
+  save();
+  document.getElementById('cancelBookingModal').style.display='none';
+  selected.clear();
+  renderDates();
+  renderTimes();
+  renderAdmin();
+  refreshStatus(true);
+  const manualMode=(data.manual||{}).mode;
+  if(manualMode==='working'){
+    toast('예약이 취소되었습니다. 수동 작업중 상태는 유지됩니다.');
+    speak('예약이 취소되었습니다.');
+  }else if(manualMode==='off'){
+    toast('예약이 취소되었습니다. 퇴근 상태는 유지됩니다.');
+    speak('예약이 취소되었습니다.');
+  }else{
+    toast('예약이 취소되었습니다. 지금 예약 가능합니다.');
+    speak('예약이 취소되었습니다. 지금 예약 가능합니다.');
+  }
+};
+
+function syncAdminUI(showPanel=false){
+  const panel=document.getElementById('adminPanel');
+  const toggle=document.getElementById('adminToggle');
+  if(adminUnlocked){
+    toggle.textContent=panel.classList.contains('show')?'🔓 관리자 닫기':'🔓 관리자';
+    if(showPanel)panel.classList.add('show');
+  }else{
+    panel.classList.remove('show');
+    toggle.textContent='🔒 관리자';
+  }
+}
+
+document.getElementById('adminToggle').onclick=()=>{
+  const panel=document.getElementById('adminPanel');
+  if(adminUnlocked){
+    panel.classList.toggle('show');
+    syncAdminUI(false);
+    if(panel.classList.contains('show')){
+      setTimeout(()=>panel.scrollIntoView({behavior:'smooth'}),100);
+    }
+    return;
+  }
+  document.getElementById('adminLock').style.display='flex';
+  document.getElementById('adminPin').focus();
 };
 document.getElementById('adminCancel').onclick=()=>document.getElementById('adminLock').style.display='none';
 document.getElementById('adminLogin').onclick=()=>{
   if(document.getElementById('adminPin').value!==ADMIN_PIN){toast('비밀번호가 맞지 않습니다');return}
-  adminUnlocked=true;document.getElementById('adminPanel').classList.add('show');
-  document.getElementById('adminLock').style.display='none';document.getElementById('adminPin').value='';
-  document.getElementById('adminToggle').textContent='🔓 관리자 종료';
+  adminUnlocked=true;
+  localStorage.setItem(ADMIN_SESSION_KEY,'true');
+  document.getElementById('adminPanel').classList.add('show');
+  document.getElementById('adminLock').style.display='none';
+  document.getElementById('adminPin').value='';
+  syncAdminUI(false);
+  toast('관리자 로그인이 유지됩니다');
   setTimeout(()=>document.getElementById('adminPanel').scrollIntoView({behavior:'smooth'}),100);
+};
+document.getElementById('adminLogout').onclick=()=>{
+  adminUnlocked=false;
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+  document.getElementById('adminPanel').classList.remove('show');
+  syncAdminUI(false);
+  toast('관리자에서 로그아웃했습니다');
 };
 
 document.getElementById('startLocation').onclick=startLocation;
+document.getElementById('workingNow').onclick=setWorkingNow;
 document.getElementById('stopLocation').onclick=stopLocation;
 
 const m=data.manual;
@@ -677,7 +1709,7 @@ document.getElementById('completeWork').onclick=()=>{
   for(const t of TIMES){
     const [h,m]=t.split(':').map(Number);
     const start=h*60+m;
-    if(mins>=start && mins<start+30 && schedule[t]){
+    if(mins>=start && mins<start+60 && schedule[t]){
       schedule[t].completed=true;
       schedule[t].completedAt=now.toISOString();
       break;
@@ -711,10 +1743,18 @@ document.getElementById('previewAnnouncement').onclick=()=>speak(document.getEle
 document.getElementById('guideBtn').onclick=()=>speak(getAnnouncement());
 
 renderAll();
+syncAdminUI(adminUnlocked);
 updateSeoulClock();
-setInterval(()=>{refreshStatus();updateSeoulClock()},15000);
+updateBookingHours();
+setInterval(()=>{refreshStatus(false);updateSeoulClock();updateBookingHours()},5000);
 setTimeout(()=>map.invalidateSize(),300);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 </script>
 </body>
 </html>
+
+<style>
+.location-actions.three-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+.location-actions.three-actions button{width:100%!important;min-height:48px!important;padding:9px 4px!important;border-radius:13px!important;font-weight:900!important}
+@media(max-width:520px){.location-actions.three-actions{gap:6px!important}.location-actions.three-actions button{font-size:12px!important}}
+</style>
