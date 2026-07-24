@@ -1,210 +1,172 @@
 
-const STORAGE_KEY = "biumchaeum_v5";
-const ADMIN_PIN = "1004"; // 실제 운영 전 반드시 변경하세요.
-const TAEREUNG = { lat: 37.6174, lng: 127.0750 };
-const GONGNEUNG_CENTER = { lat: 37.6265, lng: 127.0785 };
-const GONGNEUNG_RADIUS_M = 2400;
+const STORAGE_KEY = "biumchaeum_v19_bookings";
+const WORK_KEY = "biumchaeum_v19_working";
+const ADMIN_PASSWORD = "1011";
+const TIMES = ["09:00","10:30","12:00","13:30","15:00","16:30","18:00","19:30"];
 
-const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || {
-  bookingOpen: true,
-  working: false,
-  reservations: [],
-  sharedLocation: null
+const $ = (id) => document.getElementById(id);
+const today = new Date();
+const dateKey = today.toISOString().slice(0,10);
+$("todayLabel").textContent = `${today.getMonth()+1}월 ${today.getDate()}일 예약`;
+
+let bookings = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+let working = localStorage.getItem(WORK_KEY) === "true";
+let watchId = null;
+let map, vehicleMarker, locationMarker;
+let manualCompleteUntil = 0;
+
+const taereung = [37.6179, 127.0750];
+map = L.map("map", {zoomControl:true}).setView(taereung, 14);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom:19, attribution:"&copy; OpenStreetMap"
+}).addTo(map);
+locationMarker = L.marker(taereung).addTo(map).bindPopup("태릉입구역").openPopup();
+
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
+}
+function todayBookings(){
+  return bookings.filter(b => b.date === dateKey).sort((a,b)=>a.time.localeCompare(b.time));
+}
+function slotNow(){
+  const now = new Date();
+  const mins = now.getHours()*60+now.getMinutes();
+  return todayBookings().find(b=>{
+    const [h,m]=b.time.split(":").map(Number);
+    const start=h*60+m;
+    return mins>=start && mins<start+90;
+  });
+}
+function renderSlots(){
+  const list = $("slots");
+  list.innerHTML="";
+  TIMES.forEach(time=>{
+    const b = todayBookings().find(x=>x.time===time);
+    const current = b && slotNow()?.id===b.id && Date.now()>manualCompleteUntil;
+    const el=document.createElement("div");
+    el.className="slot"+(b?" busy":"")+(current?" current":"");
+    el.innerHTML=b
+      ? `<strong>${time} · ${current?"작업중":"예약됨"}</strong><span>${escapeHtml(b.area)} · ${escapeHtml(b.job)}</span><span>${escapeHtml(b.name)} / ${escapeHtml(b.phone)}</span>`
+      : `<strong>${time} · 예약 가능</strong><span>시간을 선택해 예약하세요</span>`;
+    list.appendChild(el);
+  });
+  const select=$("time");
+  const chosen=select.value;
+  select.innerHTML='<option value="">시간 선택</option>'+TIMES.map(t=>{
+    const used=todayBookings().some(b=>b.time===t);
+    return `<option value="${t}" ${used?"disabled":""}>${t}${used?" (예약됨)":""}</option>`;
+  }).join("");
+  if([...select.options].some(o=>o.value===chosen&&!o.disabled)) select.value=chosen;
+  renderStatus();
+  renderAdmin();
+}
+function renderStatus(){
+  const current = Date.now()>manualCompleteUntil ? slotNow() : null;
+  let title="😊 지금 가능", loc=working?"📍 이동 중":"📍 태릉입구역 부근 대기중", badge="😊 가능";
+  if(current){ title="🧹 작업중"; loc=`📍 ${current.area} · ${current.job}`; badge="🧹 작업중"; }
+  else if(!working){ title="🌙 오늘 업무 종료"; loc="📍 GPS가 중지되었습니다"; badge="🌙 종료"; }
+  $("statusTitle").textContent=title;
+  $("statusLocation").textContent=loc;
+  $("statusBadge").textContent=badge;
+  showStatusTemporarily();
+}
+let hideTimer;
+function showStatusTemporarily(){
+  clearTimeout(hideTimer);
+  $("statusCard").classList.remove("fade");
+  $("statusBadge").classList.add("hidden");
+  hideTimer=setTimeout(()=>{
+    $("statusCard").classList.add("fade");
+    $("statusBadge").classList.remove("hidden");
+  },5000);
+}
+$("statusBadge").onclick=showStatusTemporarily;
+
+function inGongneung(lat,lng){
+  return lat>37.61 && lat<37.635 && lng>127.065 && lng<127.095;
+}
+function startWork(){
+  working=true; localStorage.setItem(WORK_KEY,"true");
+  if(!navigator.geolocation){
+    alert("이 기기에서는 위치 기능을 사용할 수 없습니다.");
+    renderStatus(); return;
+  }
+  watchId=navigator.geolocation.watchPosition(pos=>{
+    const {latitude:lat, longitude:lng}=pos.coords;
+    const shown=inGongneung(lat,lng)?taereung:[lat,lng];
+    if(vehicleMarker) map.removeLayer(vehicleMarker);
+    vehicleMarker=L.marker(shown,{title:"차량 위치"}).addTo(map).bindPopup(inGongneung(lat,lng)?"공릉동 보호 위치: 태릉입구역":"현재 차량 위치");
+    map.setView(shown,15);
+    $("statusLocation").textContent=inGongneung(lat,lng)?"📍 태릉입구역 부근 이동중":"📍 현재 위치에서 이동중";
+  },err=>{
+    console.warn(err); $("statusLocation").textContent="📍 위치 권한을 확인해주세요";
+  },{enableHighAccuracy:true,maximumAge:10000,timeout:15000});
+  renderStatus();
+}
+function endWork(){
+  working=false; localStorage.setItem(WORK_KEY,"false");
+  if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null}
+  if(vehicleMarker){map.removeLayer(vehicleMarker);vehicleMarker=null}
+  map.setView(taereung,14);
+  renderStatus();
+}
+$("workStartBtn").onclick=startWork;
+$("workEndBtn").onclick=endWork;
+$("completeBtn").onclick=()=>{
+  manualCompleteUntil=Date.now()+90*60*1000;
+  renderStatus(); renderSlots();
+  $("formMessage").textContent="작업 완료 처리되었습니다. 지금 예약 가능합니다.";
 };
 
-let watchId = null;
-let marker = null;
-let accuracyCircle = null;
-let isAdmin = false;
-
-const $ = id => document.getElementById(id);
-const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
-function toast(msg){
-  const el = $("toast");
-  el.textContent = msg;
-  el.classList.add("show");
-  setTimeout(()=>el.classList.remove("show"), 2400);
-}
-
-function createTimes(select){
-  select.innerHTML = "";
-  for(let h=8; h<=21; h++){
-    for(const m of [0,30]){
-      if(h===21 && m===30) continue;
-      const t = `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
-      const o = document.createElement("option");
-      o.value=t; o.textContent=t; select.appendChild(o);
-    }
-  }
-}
-createTimes($("reserveTime"));
-createTimes($("editTime"));
-$("reserveDate").value = new Date().toISOString().slice(0,10);
-
-const map = L.map("map").setView([TAEREUNG.lat, TAEREUNG.lng], 14);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "&copy; OpenStreetMap"
-}).addTo(map);
-
-function distanceM(a,b){
-  const R=6371000, toRad=x=>x*Math.PI/180;
-  const dLat=toRad(b.lat-a.lat), dLng=toRad(b.lng-a.lng);
-  const s=Math.sin(dLat/2)**2+Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2;
-  return 2*R*Math.asin(Math.sqrt(s));
-}
-
-function publicLocation(raw){
-  if(distanceM(raw,GONGNEUNG_CENTER)<=GONGNEUNG_RADIUS_M){
-    return {...TAEREUNG, label:"태릉입구역 부근 대기중", privacy:true, accuracy:0};
-  }
-  return {...raw, label:"현재 이동중", privacy:false};
-}
-
-function renderMap(){
-  let loc;
-  if(state.working && state.sharedLocation){
-    loc = state.sharedLocation;
-    $("locationText").textContent = `📍 ${loc.label}`;
-    $("liveBadge").textContent="LIVE";
-    $("liveBadge").className="badge on";
-  }else{
-    loc = {...TAEREUNG, label:"오늘은 위치 공유가 종료되었습니다."};
-    $("locationText").textContent = "📍 오늘은 위치 공유가 종료되었습니다.";
-    $("liveBadge").textContent="OFF";
-    $("liveBadge").className="badge off";
-  }
-  const ll=[loc.lat,loc.lng];
-  if(!marker) marker=L.marker(ll).addTo(map);
-  else marker.setLatLng(ll);
-  marker.bindPopup(loc.label).openPopup();
-  map.setView(ll, state.working?15:14);
-  if(accuracyCircle){ map.removeLayer(accuracyCircle); accuracyCircle=null; }
-  if(state.working && loc.accuracy && !loc.privacy){
-    accuracyCircle=L.circle(ll,{radius:loc.accuracy}).addTo(map);
-  }
-}
-
-function renderStatus(){
-  $("shopStatus").textContent = state.bookingOpen ? "😊 예약 가능" : "😢 예약 불가";
-  $("reserveBtn").disabled = !state.bookingOpen;
-  $("reserveBtn").textContent = state.bookingOpen ? "예약 신청하기 😊" : "지금은 예약이 어려워요 😢";
-}
-
-function occupied(date,time,ignoreId=null){
-  return state.reservations.some(r=>r.id!==ignoreId && r.date===date && r.time===time && !["취소"].includes(r.status));
-}
-
-$("reserveBtn").addEventListener("click", ()=>{
-  if(!state.bookingOpen) return toast("지금은 예약을 받지 않고 있어요 😢");
-  const r={
-    id: crypto.randomUUID(),
-    name:$("customerName").value.trim(),
-    phone:$("customerPhone").value.trim(),
-    dong:$("customerDong").value.trim(),
-    date:$("reserveDate").value,
-    time:$("reserveTime").value,
-    memo:$("memo").value.trim(),
-    status:"신청",
-    createdAt:new Date().toISOString()
-  };
-  if(!r.name || !r.phone || !r.date) return toast("이름, 연락처, 날짜를 확인해주세요.");
-  if(occupied(r.date,r.time)) return toast("이미 예약된 시간이에요. 다른 시간을 골라주세요 😢");
-  state.reservations.push(r); save(); renderReservations();
-  toast("🎉 감사합니다! 예약이 접수되었습니다 💙");
-  // Firebase Cloud Function 또는 FCM 호출 위치
-});
-
-$("adminLoginBtn").addEventListener("click", ()=>{
-  if(isAdmin){
-    isAdmin=false; $("adminPanel").classList.add("hidden"); $("adminLoginBtn").textContent="관리자 열기"; return;
-  }
-  const pin=prompt("관리자 비밀번호를 입력하세요.");
-  if(pin===ADMIN_PIN){
-    isAdmin=true; $("adminPanel").classList.remove("hidden"); $("adminLoginBtn").textContent="관리자 닫기"; renderReservations();
-  } else toast("비밀번호가 맞지 않아요.");
-});
-
-$("toggleBookingBtn").addEventListener("click", ()=>{
-  state.bookingOpen=!state.bookingOpen; save(); renderStatus();
-  toast(state.bookingOpen?"😊 예약을 다시 받습니다.":"😢 예약 접수를 잠시 닫았습니다.");
-});
-
-function startLocation(){
-  if(!navigator.geolocation) return toast("이 기기에서는 위치 기능을 사용할 수 없습니다.");
-  if(watchId!==null) navigator.geolocation.clearWatch(watchId);
-  state.working=true; save(); renderMap();
-  watchId=navigator.geolocation.watchPosition(pos=>{
-    const raw={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy};
-    state.sharedLocation=publicLocation(raw);
-    save(); renderMap();
-    // Firebase Realtime Database 또는 Firestore 전송 위치
-  }, err=>{
-    toast("위치 권한을 허용해주세요.");
-    console.error(err);
-  },{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
-  toast("🟢 출근했습니다. 위치 공유를 시작합니다.");
-}
-
-function stopLocation(){
-  if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;}
-  state.working=false; state.sharedLocation=null; save(); renderMap();
-  toast("🔴 퇴근했습니다. 위치 공유가 완전히 중지되었습니다.");
-}
-$("startWorkBtn").addEventListener("click",startLocation);
-$("stopWorkBtn").addEventListener("click",stopLocation);
-
-function renderReservations(){
-  const box=$("reservationList");
-  if(!state.reservations.length){box.innerHTML='<p class="hint">아직 예약이 없습니다.</p>';return;}
-  box.innerHTML="";
-  [...state.reservations].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).forEach(r=>{
-    const el=document.createElement("div"); el.className="reservation-item";
-    el.innerHTML=`
-      <div class="reservation-head">
-        <strong>${escapeHtml(r.date)} ${escapeHtml(r.time)} · ${escapeHtml(r.name)}</strong>
-        <span class="status-pill">${escapeHtml(r.status)}</span>
-      </div>
-      <p>${escapeHtml(r.phone)} · ${escapeHtml(r.dong||"동네 미입력")}</p>
-      <p>${escapeHtml(r.memo||"요청사항 없음")}</p>
-      <div class="item-actions">
-        <button class="secondary" data-edit="${r.id}">수정</button>
-        <button class="danger" data-delete="${r.id}">삭제</button>
-      </div>`;
-    box.appendChild(el);
-  });
-  box.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openEdit(b.dataset.edit));
-  box.querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>{
-    if(confirm("이 예약을 삭제할까요?")){
-      state.reservations=state.reservations.filter(r=>r.id!==b.dataset.delete);save();renderReservations();toast("예약을 삭제했습니다.");
-    }
-  });
-}
-function openEdit(id){
-  const r=state.reservations.find(x=>x.id===id); if(!r)return;
-  $("editId").value=r.id;$("editName").value=r.name;$("editPhone").value=r.phone;
-  $("editDong").value=r.dong;$("editDate").value=r.date;$("editTime").value=r.time;
-  $("editStatus").value=r.status;$("editMemo").value=r.memo;
-  $("editDialog").showModal();
-}
-$("saveEditBtn").addEventListener("click",e=>{
+$("bookingForm").addEventListener("submit",e=>{
   e.preventDefault();
-  const id=$("editId").value;
-  const r=state.reservations.find(x=>x.id===id); if(!r)return;
-  const newDate=$("editDate").value,newTime=$("editTime").value;
-  if(occupied(newDate,newTime,id)) return toast("그 시간에는 다른 예약이 있습니다.");
-  Object.assign(r,{
-    name:$("editName").value.trim(),
-    phone:$("editPhone").value.trim(),
-    dong:$("editDong").value.trim(),
-    date:newDate,time:newTime,status:$("editStatus").value,memo:$("editMemo").value.trim(),
-    updatedAt:new Date().toISOString()
-  });
-  save();renderReservations();$("editDialog").close();
-  toast("✏️ 고객 예약을 수정했습니다.");
-  // Firebase 연동 시 고객에게 변경 알림 발송 위치
+  const data={
+    id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),
+    date:dateKey,time:$("time").value,name:$("name").value.trim(),
+    phone:$("phone").value.trim(),area:$("area").value.trim(),job:$("job").value.trim()
+  };
+  if(!data.time || !data.name || !data.phone || !data.area || !data.job) return;
+  if(todayBookings().some(b=>b.time===data.time)){
+    $("formMessage").textContent="이미 예약된 시간입니다."; return;
+  }
+  bookings.push(data); save(); e.target.reset();
+  $("formMessage").textContent=`${data.time} 예약이 등록되었습니다.`;
+  renderSlots();
 });
-function escapeHtml(s=""){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 
-renderStatus(); renderMap(); renderReservations();
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+$("resetTodayBtn").onclick=()=>{
+  if(confirm("오늘 예약을 모두 삭제할까요?")){
+    bookings=bookings.filter(b=>b.date!==dateKey);save();renderSlots();
+  }
+};
+$("adminBtn").onclick=()=>{$("adminPassword").value="";$("adminMessage").textContent="";$("adminDialog").showModal()};
+$("adminLoginBtn").onclick=(e)=>{
+  e.preventDefault();
+  if($("adminPassword").value===ADMIN_PASSWORD){
+    $("adminDialog").close(); renderAdmin(); $("adminPanel").showModal();
+  } else $("adminMessage").textContent="비밀번호가 올바르지 않습니다.";
+};
+$("adminCloseBtn").onclick=()=>$("adminPanel").close();
+function renderAdmin(){
+  const box=$("adminBookings"); if(!box) return;
+  const list=todayBookings();
+  box.innerHTML=list.length?list.map(b=>`
+    <div class="admin-item">
+      <strong>${b.time} · ${escapeHtml(b.name)}</strong>
+      <div>${escapeHtml(b.phone)} / ${escapeHtml(b.area)}</div>
+      <div>${escapeHtml(b.job)}</div>
+      <button data-delete="${b.id}">삭제</button>
+    </div>`).join(""):"오늘 예약이 없습니다.";
+  box.querySelectorAll("[data-delete]").forEach(btn=>btn.onclick=()=>{
+    bookings=bookings.filter(b=>b.id!==btn.dataset.delete);save();renderSlots();
+  });
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+setInterval(()=>{renderSlots()},60000);
+renderSlots();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));
+}
