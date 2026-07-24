@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<rect width="512" height="512" rx="120" fill="#e8f8ff"/>
-<path d="M145 344h220c46 0 83-34 83-77s-37-78-83-78c-7-52-51-91-106-91-47 0-88 29-102 70-5-1-11-1-16-1-48 0-87 39-87 87s40 90 91 90z" fill="#fff" stroke="#87cdeb" stroke-width="18"/>
-<path d="M174 390h164" stroke="#3daee9" stroke-width="22" stroke-linecap="round"/>
+<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#6ec7f2"/><stop offset="1" stop-color="#9fe0fb"/></linearGradient></defs>
+<rect width="512" height="512" rx="120" fill="url(#g)"/>
+<text x="256" y="300" text-anchor="middle" font-size="150" font-family="sans-serif" font-weight="700" fill="white">비채</text>
 </svg>
